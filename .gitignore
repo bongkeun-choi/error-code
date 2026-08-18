@@ -1,0 +1,8 @@
+# 관리자 토큰/파이썬 파일 및 대용량 PDF 제외
+*.pdf
+turso_uploader.py
+init_db.py
+test_turso.py
+__pycache__/
+Plaintext
+TURSO정보.txt
