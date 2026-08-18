@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>볼보 진단 매뉴얼 - 웹 업로더 & 중복 관리</title>
+  <!-- PDF.js 라이브러리 (브라우저 PDF 파싱 엔진) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    :root {
+      --primary: #0f172a;
+      --accent: #0284c7;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --border: #cbd5e1;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: var(--bg); color: #1e293b; padding-bottom: 60px; }
+    
+    .header { background: var(--primary); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .header a { color: #93c5fd; text-decoration: none; font-size: 13px; font-weight: bold; }
+    .container { max-width: 1000px; margin: 20px auto; padding: 0 16px; }
+
+    /* 드래그 앤 드롭 존 */
+    .drop-zone { border: 2.5px dashed var(--accent); background: #f0f9ff; border-radius: 12px; padding: 36px 20px; text-align: center; cursor: pointer; transition: 0.2s; }
+    .drop-zone:hover, .drop-zone.dragover { background: #e0f2fe; border-color: #0369a1; }
+    .drop-zone h3 { font-size: 18px; color: #0369a1; margin-bottom: 6px; }
+    .drop-zone p { font-size: 13px; color: #64748b; }
+
+    /* 요약 대시보드 */
+    .summary-box { display: flex; gap: 12px; margin: 20px 0; }
+    .summary-card { flex: 1; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
+    .summary-card b { font-size: 20px; display: block; margin-top: 4px; }
+    .card-new { border-left: 5px solid var(--success); color: var(--success); }
+    .card-dup { border-left: 5px solid var(--warning); color: var(--warning); }
+    .card-total { border-left: 5px solid var(--accent); color: var(--accent); }
+
+    /* 액션 툴바 */
+    .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .btn { padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; border: none; transition: 0.15s; }
+    .btn-upload { background: var(--accent); color: white; }
+    .btn-upload:hover { background: #0369a1; }
+    .btn-upload:disabled { background: #94a3b8; cursor: not-allowed; }
+    .btn-clear { background: #e2e8f0; color: #475569; }
+
+    /* 파싱 및 중복 검사 결과 테이블 */
+    .tbl-container { background: white; border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    th { background: #f1f5f9; font-weight: bold; color: #475569; }
+    
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+    .badge-new { background: #dcfce7; color: #15803d; }
+    .badge-dup { background: #fef3c7; color: #b45309; }
+    .badge-iso { background: #e0f2fe; color: #0369a1; }
+    .badge-sae { background: #ffedd5; color: #c2410c; }
+
+    .progress-wrap { display: none; margin-top: 14px; background: #e2e8f0; border-radius: 8px; height: 16px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: var(--success); transition: width 0.2s; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h2>🚜 볼보 진단서 PDF 웹 업로더</h2>
+    <a href="index.html">🔍 검색 뷰어로 이동 ➔</a>
+  </div>
+
+  <div class="container">
+    <!-- 드래그 & 드롭 영역 -->
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <h3>📁 PDF 파일을 여기에 끌어다 놓거나 클릭하여 선택</h3>
+      <p>볼보 진단 매뉴얼 PDF 파일들을 여러 개 동시에 선택할 수 있습니다.</p>
+      <input type="file" id="fileInput" multiple accept=".pdf" style="display:none;" onchange="handleFiles(this.files)">
+    </div>
+
+    <!-- 진행 상황 프로그레스 바 -->
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- 요약 대시보드 -->
+    <div class="summary-box" id="summaryBox" style="display:none;">
+      <div class="summary-card card-total">대기 중 파일<b id="cntTotal">0개</b></div>
+      <div class="summary-card card-new">신규 고장코드<b id="cntNew">0개</b></div>
+      <div class="summary-card card-dup">중복(기존 존재)<b id="cntDup">0개</b></div>
+    </div>
+
+    <!-- 액션 툴바 -->
+    <div class="toolbar" id="toolbar" style="display:none;">
+      <div>
+        <label><input type="checkbox" id="checkAll" checked onchange="toggleSelectAll(this.checked)"> 전체 선택</label>
+        <span id="selectedInfo" style="margin-left: 10px; font-size: 13px; color: #64748b;"></span>
+      </div>
+      <div>
+        <button class="btn btn-clear" onclick="resetList()">목록 초기화</button>
+        <button class="btn btn-upload" id="uploadBtn" onclick="startUpload()">⚡ Turso DB로 업로드 실행</button>
+      </div>
+    </div>
+
+    <!-- 파일 검사 결과 테이블 -->
+    <div class="tbl-container" id="tblBox" style="display:none;">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40px;">선택</th>
+            <th>상태 (중복 여부)</th>
+            <th>파일명</th>
+            <th>고장코드 (DTC)</th>
+            <th>규격</th>
+            <th>컨트롤 유니트 / 구성부품</th>
+            <th>업로드 상태</th>
+          </tr>
+        </thead>
+        <tbody id="fileListBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // PDF.js 워커 설정
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    // =========================================================================
+    // [Turso Edge DB 설정]
+    // =========================================================================
+    const TURSO_DB_URL = "https://volvoerror-bongkeun-choi.aws-ap-northeast-1.turso.io";
+    const TURSO_ADMIN_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODcwOTA3MDQsImlkIjoiMDFhMDE1M2QtNDAwMS03OWU4LTlmYWUtNWJmZDMyZjcyMGE3Iiwia2lkIjoicEo1RHFMd2V3dHJZLTBXWGNxRTd0cnVRNWxrWDlYOVFJNTYxZl9lSC1YTSIsInJpZCI6IjY1YmYwM2JjLTc1ZmEtNGQ1NC05MzY0LWFhNjYzNjRlNzZjNyJ9.O2P-wN5MFUe6jCbxxxSrvtMZt_MyTyavApqJ-2se7NwSgCbi1byQezjfr6Ba49TWcou0Cg4hBq1xUOg7DAVSBg";
+
+    let parsedItems = [];
+
+    // 드래그 앤 드롭 이벤트 처리
+    const dropZone = document.getElementById('dropZone');
+    ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, (evt) => { evt.preventDefault(); dropZone.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(e => dropZone.addEventListener(e, (evt) => { evt.preventDefault(); dropZone.classList.remove('dragover'); }));
+    dropZone.addEventListener('drop', (evt) => {
+      evt.preventDefault();
+      if (evt.dataTransfer.files) handleFiles(evt.dataTransfer.files);
+    });
+
+    // 1. PDF 텍스트 추출 (브라우저 PDF.js 엔진)
+    async function extractPdfText(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = "";
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items.map(item => item.str).join(" ");
+        fullText += pageText + "\n";
+      }
+      return fullText;
+    }
+
+    // 2. 텍스트 정제 및 볼보 진단 데이터 추출 (JS 파서)
+    function parseVolvoText(rawText, filename) {
+      const clean = (t) => (t || "").replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+      const isSae = /MID\s*\d+|PID\s*\d+|SID\s*\d+|FMI\s*\d+/i.test(rawText);
+
+      if (isSae) {
+        const mid = (rawText.match(/MID\s*(\d+)/i) || ['', '128'])[1];
+        const pidM = rawText.match(/(PID|PPID|SID|PSID)\s*(\d+)/i);
+        const pidType = pidM ? pidM[1] : "PID";
+        const pidNum = pidM ? pidM[2] : "100";
+        const dtc = `MID${mid} ${pidType}${pidNum}`;
+        const disp = clean((rawText.match(/텍스트\s*프레젠테이션\s*[:\n]\s*([^\n]+)/) || ['', `${mid} ${pidType}${pidNum}`])[1]);
+        const ecu = `MID${mid} ` + clean((rawText.match(/컨트롤\s*유니트\s*[:\n]\s*([^\n]+)/) || ['', '엔진 ECU'])[1]).replace(`MID${mid}`, '').trim();
+
+        return {
+          filename, dtc, doc_type: "SAE", ecu, comp_name: `${pidType}${pidNum}`,
+          standard: "SAE J1939", event: "-", symptom: "없음", condition: "없음", pre_dtc: "없음",
+          causes: "없음", actions: "없음", display_msg: disp
+        };
+      } else {
+        const fileBase = filename.replace(/\.pdf$/i, '');
+        const dtcM = rawText.match(/([P|U|B|C][0-9A-Z]{5,7})/);
+        const dtc = dtcM ? dtcM[1] : fileBase;
+        const ecuM = rawText.match(/컨트롤\s*유니트\s*([^\n]+)/);
+        const ecu = ecuM ? clean(ecuM[1]) : "일반 용도 장비의 전자 컨트롤 유닛 2";
+        const compM = rawText.match(/(?:고장 유형|구성부품|DTC 코드)\s*([^\n]+)/);
+        const compName = compM ? clean(compM[1]) : dtc;
+
+        return {
+          filename, dtc, doc_type: "ISO", ecu, comp_name: compName,
+          standard: "", event: "-", symptom: "없음", condition: "없음", pre_dtc: "없음",
+          causes: "없음", actions: "없음", display_msg: "-"
+        };
+      }
+    }
+
+    // 3. 파일 처리 & DB 실시간 중복 검사
+    async function handleFiles(files) {
+      if (!files || files.length === 0) return;
+
+      document.getElementById('summaryBox').style.display = 'flex';
+      document.getElementById('toolbar').style.display = 'flex';
+      document.getElementById('tblBox').style.display = 'block';
+
+      const statusEl = document.getElementById('selectedInfo');
+      statusEl.innerText = "⏳ PDF 분석 및 DB 중복 검사 중...";
+
+      for (const file of files) {
+        if (!file.name.toLowerCase().endsWith('.pdf')) continue;
+        try {
+          const text = await extractPdfText(file);
+          const item = parseVolvoText(text, file.name);
+          item.selected = true;
+          item.status = "CHECKING";
+          parsedItems.push(item);
+        } catch (e) {
+          console.error("파일 파싱 실패:", file.name, e);
+        }
+      }
+
+      // Turso DB에서 중복된 DTC 목록 한 번에 조회
+      await checkDuplicatesInTurso();
+      renderTable();
+    }
+
+    // Turso DB 실시간 조회
+    async function checkDuplicatesInTurso() {
+      if (parsedItems.length === 0) return;
+      const dtcs = parsedItems.map(i => `'${i.dtc}'`).join(',');
+      const sql = `SELECT dtc, comp_name, created_at FROM diagnostics WHERE dtc IN (${dtcs});`;
+
+      try {
+        const res = await fetch(`${TURSO_DB_URL}/v2/pipeline`, {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${TURSO_ADMIN_TOKEN}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ requests: [{ type: "execute", stmt: { sql } }] })
+        });
+        const data = await res.json();
+        const existingMap = new Map();
+
+        const result = data.results[0]?.response?.result;
+        if (result && result.rows) {
+          result.rows.forEach(r => {
+            existingMap.set(r[0].value, { comp: r[1].value, created: r[2].value });
+          });
+        }
+
+        parsedItems.forEach(item => {
+          if (existingMap.has(item.dtc)) {
+            item.status = "DUPLICATE";
+            item.existingInfo = existingMap.get(item.dtc);
+          } else {
+            item.status = "NEW";
+          }
+        });
+      } catch (e) {
+        console.error("DB 중복 조회 오류:", e);
+        parsedItems.forEach(i => { i.status = "NEW"; });
+      }
+    }
+
+    // 화면 렌더링
+    function renderTable() {
+      const tbody = document.getElementById('fileListBody');
+      tbody.innerHTML = '';
+
+      let cntNew = 0, cntDup = 0;
+
+      parsedItems.forEach((item, idx) => {
+        if (item.status === 'NEW') cntNew++;
+        if (item.status === 'DUPLICATE') cntDup++;
+
+        const isDup = item.status === 'DUPLICATE';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleItem(${idx}, this.checked)"></td>
+          <td>
+            ${isDup 
+              ? `<span class="badge badge-dup">⚠️ 중복 (덮어쓰기)</span>` 
+              : `<span class="badge badge-new">🟢 신규 등록</span>`}
+          </td>
+          <td><b>${item.filename}</b></td>
+          <td><b style="color:var(--danger); font-size:14px;">${item.dtc}</b></td>
+          <td><span class="badge ${item.doc_type === 'ISO' ? 'badge-iso' : 'badge-sae'}">${item.doc_type}</span></td>
+          <td>${item.comp_name || '-'}</td>
+          <td id="status_${idx}" style="font-weight:bold; color:#64748b;">대기 중</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('cntTotal').innerText = `${parsedItems.length}개`;
+      document.getElementById('cntNew').innerText = `${cntNew}개`;
+      document.getElementById('cntDup').innerText = `${cntDup}개`;
+      document.getElementById('selectedInfo').innerText = `총 ${parsedItems.length}개 항목 검사 완료`;
+    }
+
+    function toggleSelectAll(checked) {
+      parsedItems.forEach(i => i.selected = checked);
+      renderTable();
+    }
+
+    function toggleItem(idx, checked) {
+      parsedItems[idx].selected = checked;
+    }
+
+    function resetList() {
+      parsedItems = [];
+      document.getElementById('summaryBox').style.display = 'none';
+      document.getElementById('toolbar').style.display = 'none';
+      document.getElementById('tblBox').style.display = 'none';
+      document.getElementById('fileInput').value = '';
+    }
+
+    // 4. 선택된 항목 Turso DB 일괄 업로드 실행
+    async function startUpload() {
+      const targets = parsedItems.filter(i => i.selected);
+      if (targets.length === 0) {
+        alert("업로드할 항목을 최소 1개 이상 선택하세요.");
+        return;
+      }
+
+      const btn = document.getElementById('uploadBtn');
+      btn.disabled = true;
+      btn.innerText = "⏳ DB 적재 진행 중...";
+
+      const progressWrap = document.getElementById('progressWrap');
+      const progressBar = document.getElementById('progressBar');
+      progressWrap.style.display = 'block';
+      progressBar.style.width = '0%';
+
+      let successCount = 0;
+
+      for (let i = 0; i < targets.length; i++) {
+        const item = targets[i];
+        const originalIdx = parsedItems.indexOf(item);
+        const statusTd = document.getElementById(`status_${originalIdx}`);
+        statusTd.innerText = "전송 중...";
+        statusTd.style.color = "var(--accent)";
+
+        const payload = {
+          requests: [{
+            type: "execute",
+            stmt: {
+              sql: `
+                INSERT INTO diagnostics (dtc, doc_type, ecu, comp_name, standard, event, symptom, condition, pre_dtc, causes, actions, display_msg)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(dtc) DO UPDATE SET
+                  doc_type=excluded.doc_type, ecu=excluded.ecu, comp_name=excluded.comp_name,
+                  standard=excluded.standard, event=excluded.event, symptom=excluded.symptom,
+                  condition=excluded.condition, pre_dtc=excluded.pre_dtc, causes=excluded.causes,
+                  actions=excluded.actions, display_msg=excluded.display_msg;
+              `,
+              args: [
+                { type: "text", value: item.dtc },
+                { type: "text", value: item.doc_type },
+                { type: "text", value: item.ecu },
+                { type: "text", value: item.comp_name },
+                { type: "text", value: item.standard },
+                { type: "text", value: item.event },
+                { type: "text", value: item.symptom },
+                { type: "text", value: item.condition },
+                { type: "text", value: item.pre_dtc },
+                { type: "text", value: item.causes },
+                { type: "text", value: item.actions },
+                { type: "text", value: item.display_msg }
+              ]
+            }
+          }]
+        };
+
+        try {
+          const res = await fetch(`${TURSO_DB_URL}/v2/pipeline`, {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${TURSO_ADMIN_TOKEN}`,
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (res.ok) {
+            statusTd.innerText = "✅ 적재 성공";
+            statusTd.style.color = "var(--success)";
+            successCount++;
+          } else {
+            statusTd.innerText = "❌ 실패";
+            statusTd.style.color = "var(--danger)";
+          }
+        } catch (e) {
+          statusTd.innerText = "❌ 오류";
+          statusTd.style.color = "var(--danger)";
+        }
+
+        const pct = Math.round(((i + 1) / targets.length) * 100);
+        progressBar.style.width = `${pct}%`;
+      }
+
+      btn.disabled = false;
+      btn.innerText = "⚡ Turso DB로 업로드 실행";
+      alert(`🎉 업로드 완료!\n총 ${targets.length}개 중 ${successCount}개 고장코드가 Turso DB에 성공적으로 저장되었습니다.`);
+    }
+  </script>
+</body>
+</html>
