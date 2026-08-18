@@ -2,39 +2,106 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>볼보에러 - Turso Edge 뷰어</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>볼보 장비 진단 매뉴얼 뷰어</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', -apple-system, sans-serif; }
-    body { background: #f1f5f9; color: #0f172a; padding-bottom: 60px; }
-    .header { background: #0f172a; color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
-    .container { max-width: 860px; margin: 20px auto; padding: 0 14px; }
-    .search-input { width: 100%; padding: 14px 16px; font-size: 16px; font-weight: bold; border: 2px solid #94a3b8; border-radius: 10px; outline: none; }
-    .search-input:focus { border-color: #0284c7; }
-    .status { font-size: 13px; color: #64748b; font-weight: bold; margin: 10px 0 16px; }
-    .status.error { color: #dc2626; background: #fee2e2; padding: 10px; border-radius: 8px; border: 1px solid #fca5a5; }
-    .status.ok { color: #0284c7; }
-    .card { background: white; border: 1.5px solid #cbd5e1; border-radius: 12px; margin-bottom: 14px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
-    .card-header { padding: 14px 16px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-    .badge-dtc { background: #dc2626; color: white; padding: 3px 8px; border-radius: 4px; font-weight: 900; font-size: 13px; }
-    .oem-sheet { padding: 20px; background: white; font-size: 13px; }
-    .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 12px; }
-    .oem-tbl th, .oem-tbl td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; }
-    .oem-tbl th { background: #e2e8f0; font-weight: bold; text-align: left; }
-    .bullet { margin-bottom: 3px; display: flex; gap: 6px; }
+    :root {
+      --primary: #1e3a8a;
+      --primary-dark: #0f172a;
+      --accent: #0284c7;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #cbd5e1;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif; }
+    body { background: var(--bg); color: var(--text); padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
+
+    /* 헤더 */
+    .header { background: var(--primary-dark); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+    .header h1 { font-size: 17px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+    .header .live-indicator { font-size: 11px; background: #059669; color: white; padding: 2px 8px; border-radius: 12px; font-weight: bold; }
+
+    .container { max-width: 920px; margin: 16px auto; padding: 0 14px; }
+
+    /* 검색창 & 필터 바 */
+    .search-box { position: relative; margin-bottom: 10px; }
+    .search-input { width: 100%; padding: 14px 44px 14px 16px; font-size: 16px; font-weight: 700; border: 2px solid #94a3b8; border-radius: 12px; outline: none; transition: 0.2s; background: white; }
+    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2); }
+    .clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--muted); background: none; border: none; cursor: pointer; display: none; padding: 4px; }
+
+    .filter-tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+    .filter-tab { background: white; border: 1px solid var(--border); padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: var(--muted); cursor: pointer; white-space: nowrap; transition: 0.2s; }
+    .filter-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    .status { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .status.error { color: var(--danger); background: #fee2e2; padding: 10px 14px; border-radius: 8px; border: 1px solid #fca5a5; }
+
+    /* 결과 카드 */
+    .card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 14px; margin-bottom: 16px; overflow: hidden; box-shadow: 0 3px 12px rgba(0,0,0,0.04); transition: transform 0.15s; }
+    .card-header { padding: 12px 16px; background: #f1f5f9; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .card-header-left { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .badge-dtc { background: var(--danger); color: white; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px; }
+    .badge-type { background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px; font-weight: 800; font-size: 11px; }
+    .card-actions { display: flex; gap: 6px; }
+    .action-btn { background: white; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+    .action-btn:hover { background: #f8fafc; }
+
+    /* OEM 테이블 스타일 */
+    .oem-sheet { padding: 18px; font-size: 13.5px; }
+    .oem-title { font-size: 18px; font-weight: 900; margin-bottom: 12px; color: var(--primary-dark); }
+    .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 14px; }
+    .oem-tbl th, .oem-tbl td { border: 1px solid #000; padding: 7px 10px; vertical-align: top; line-height: 1.5; }
+    .oem-tbl th { background: #e2e8f0; font-weight: 800; text-align: left; width: 28%; font-size: 13px; }
+    .bullet { margin-bottom: 4px; display: flex; gap: 8px; align-items: flex-start; }
+    .bullet span:first-child { color: var(--accent); font-weight: bold; }
+
+    /* FMI 리스트 스타일 */
+    .fmi-card { background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; margin-top: 8px; }
+    .fmi-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .badge-fmi { background: #ea580c; color: white; padding: 2px 7px; border-radius: 4px; font-weight: 900; font-size: 12px; }
+
+    .highlight { background-color: #fef08a; padding: 1px 3px; border-radius: 2px; font-weight: bold; }
+    .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); font-weight: 600; }
   </style>
 </head>
 <body>
-  <div class="header"><h2>🚜 볼보 진단 매뉴얼 (Turso Edge)</h2></div>
+
+  <div class="header">
+    <h1>🚜 볼보 진단 매뉴얼 뷰어</h1>
+    <div class="live-indicator">● Turso Edge Online</div>
+  </div>
+
   <div class="container">
-    <input type="text" id="searchInput" class="search-input" placeholder="고장코드 검색 (예: 2311, B102311, U114600, PID45)..." oninput="onSearch()">
+    <div class="search-box">
+      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 시스템 / FMI 검색 (예: 2311, B102311, MID128)..." oninput="handleSearchInput()">
+      <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
+    </div>
+
+    <div class="filter-tabs">
+      <button class="filter-tab active" onclick="setFilter('ALL', this)">전체</button>
+      <button class="filter-tab" onclick="setFilter('ISO', this)">ISO 코드</button>
+      <button class="filter-tab" onclick="setFilter('SAE', this)">SAE J1939</button>
+      <button class="filter-tab" onclick="setFilter('엔진', this)">엔진 ECU</button>
+      <button class="filter-tab" onclick="setFilter('V-ECU', this)">V-ECU</button>
+    </div>
+
     <div class="status" id="status">검색어를 2글자 이상 입력하세요.</div>
     <div id="results"></div>
   </div>
 
   <script>
+    // =========================================================================
+    // [Turso Edge DB 설정]
+    // =========================================================================
     const TURSO_URL = "https://volvoerror-bongkeun-choi.aws-ap-northeast-1.turso.io/v2/pipeline";
     const TURSO_READ_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODcwOTA3MDQsImlkIjoiMDFhMDE1M2QtNDAwMS03OWU4LTlmYWUtNWJmZDMyZjcyMGE3Iiwia2lkIjoicEo1RHFMd2V3dHJZLTBXWGNxRTd0cnVRNWxrWDlYOVFJNTYxZl9lSC1YTSIsInJpZCI6IjY1YmYwM2JjLTc1ZmEtNGQ1NC05MzY0LWFhNjYzNjRlNzZjNyJ9.O2P-wN5MFUe6jCbxxxSrvtMZt_MyTyavApqJ-2se7NwSgCbi1byQezjfr6Ba49TWcou0Cg4hBq1xUOg7DAVSBg";
+
+    let currentFilter = 'ALL';
+    let searchTimer = null;
+    const cache = new Map();
 
     async function queryTurso(sql, args = []) {
       const payload = {
@@ -57,17 +124,13 @@
       });
 
       if (!res.ok) {
-        const errText = await res.text();
-        throw new Error(`[HTTP ${res.status}] ${errText}`);
+        throw new Error(`[HTTP ${res.status}] Turso 서버 응답 에러`);
       }
 
       const data = await res.json();
       if (!data.results || data.results.length === 0) return [];
-
       const firstRes = data.results[0];
-      if (firstRes.type === "error") {
-        throw new Error(`[SQL 오류] ${firstRes.error?.message || JSON.stringify(firstRes.error)}`);
-      }
+      if (firstRes.type === "error") throw new Error(firstRes.error?.message || "SQL Error");
 
       const result = firstRes.response?.result;
       if (!result) return [];
@@ -80,57 +143,99 @@
       });
     }
 
-    let searchTimer = null;
-    function onSearch() {
+    function handleSearchInput() {
+      const q = document.getElementById('searchInput').value.trim();
+      document.getElementById('clearBtn').style.display = q ? 'block' : 'none';
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(async () => {
-        const q = document.getElementById('searchInput').value.trim();
-        const statusEl = document.getElementById('status');
-        const resultsEl = document.getElementById('results');
-
-        if (q.length < 2) {
-          resultsEl.innerHTML = '';
-          statusEl.className = 'status';
-          statusEl.innerText = '검색어를 2글자 이상 입력하세요.';
-          return;
-        }
-
-        statusEl.className = 'status ok';
-        statusEl.innerText = '⚡ Turso Edge DB 검색 중...';
-        const start = performance.now();
-
-        try {
-          const items = await queryTurso(
-            "SELECT * FROM diagnostics WHERE dtc LIKE ? OR comp_name LIKE ? LIMIT 10", 
-            [`%${q}%`, `%${q}%`]
-          );
-          
-          const elapsed = (performance.now() - start).toFixed(1);
-          statusEl.className = 'status ok';
-          statusEl.innerText = `검색 완료 (${items.length}건, ${elapsed}ms)`;
-
-          renderResults(items);
-        } catch (err) {
-          statusEl.className = 'status error';
-          statusEl.innerHTML = `⚠️ <b>오류 원인:</b> ${err.message}`;
-          resultsEl.innerHTML = '';
-        }
-      }, 150);
+      searchTimer = setTimeout(() => executeSearch(q), 120);
     }
 
-    async function renderResults(items) {
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('clearBtn').style.display = 'none';
+      document.getElementById('results').innerHTML = '';
+      document.getElementById('status').innerText = '검색어를 2글자 이상 입력하세요.';
+    }
+
+    function setFilter(filter, el) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+      el.classList.add('active');
+      const q = document.getElementById('searchInput').value.trim();
+      if (q.length >= 2) executeSearch(q);
+    }
+
+    async function executeSearch(q) {
+      const statusEl = document.getElementById('status');
+      const resultsEl = document.getElementById('results');
+
+      if (q.length < 2) {
+        resultsEl.innerHTML = '';
+        statusEl.className = 'status';
+        statusEl.innerText = '검색어를 2글자 이상 입력하세요.';
+        return;
+      }
+
+      statusEl.className = 'status';
+      statusEl.innerText = '⚡ Turso Edge DB 검색 중...';
+      const start = performance.now();
+
+      try {
+        let sql = "SELECT * FROM diagnostics WHERE (dtc LIKE ? OR comp_name LIKE ? OR causes LIKE ? OR display_msg LIKE ?)";
+        let params = [`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`];
+
+        if (currentFilter === 'ISO') {
+          sql += " AND doc_type = 'ISO'";
+        } else if (currentFilter === 'SAE') {
+          sql += " AND doc_type = 'SAE'";
+        } else if (currentFilter !== 'ALL') {
+          sql += " AND ecu LIKE ?";
+          params.push(`%${currentFilter}%`);
+        }
+        sql += " LIMIT 15";
+
+        const cacheKey = `${sql}_${params.join('_')}`;
+        let items;
+        if (cache.has(cacheKey)) {
+          items = cache.get(cacheKey);
+        } else {
+          items = await queryTurso(sql, params);
+          cache.set(cacheKey, items);
+        }
+
+        const elapsed = (performance.now() - start).toFixed(1);
+        statusEl.innerHTML = `<span>검색 결과 <b>${items.length}</b>건</span><span>응답속도: <b>${elapsed}ms</b></span>`;
+        renderResults(items, q);
+      } catch (err) {
+        statusEl.className = 'status error';
+        statusEl.innerText = `⚠️ 오류 원인: ${err.message}`;
+        resultsEl.innerHTML = '';
+      }
+    }
+
+    function highlightText(text, keyword) {
+      if (!text || !keyword) return text || '';
+      const regex = new RegExp(`(${keyword})`, 'gi');
+      return String(text).replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    async function renderResults(items, keyword) {
       const box = document.getElementById('results');
       box.innerHTML = '';
 
       if (items.length === 0) {
-        box.innerHTML = '<div style="text-align:center; padding:40px; color:#64748b;">일치하는 진단 데이터가 없습니다.</div>';
+        box.innerHTML = '<div class="empty-state">일치하는 진단 매뉴얼 데이터가 없습니다.</div>';
         return;
       }
 
       for (const d of items) {
         let specs = [];
+        let fmiList = [];
         try {
           specs = await queryTurso("SELECT * FROM diagnostic_specs WHERE dtc = ?", [d.dtc]);
+          if (d.doc_type === 'SAE') {
+            fmiList = await queryTurso("SELECT * FROM diagnostic_fmi WHERE dtc = ?", [d.dtc]);
+          }
         } catch(e) { console.warn(e); }
 
         let optRows = specs.filter(s => s.spec_type === 'OPTION').map(s => `<tr><td>${s.model_type || '-'}</td><td>${s.opt_number || '-'}</td><td>${s.opt_name || '-'}</td><td>${s.opt_config || '-'}</td></tr>`).join('');
@@ -140,38 +245,67 @@
         if (optRows) topTablesHtml += `<table class="oem-tbl"><tr><th colspan="4">옵션/구성에 대해 유효</th></tr><tr style="background:#f8fafc; font-weight:bold;"><td>모델 종류:</td><td>옵션 번호</td><td>옵션</td><td>구성</td></tr>${optRows}</table>`;
         if (serialRows) topTablesHtml += `<table class="oem-tbl"><tr><th colspan="4">일련 번호에 대해 유효</th></tr><tr style="background:#f8fafc; font-weight:bold;"><td>모델 종류:</td><td>생산 사업장</td><td>일련 번호 시작</td><td>일련 번호 종료</td></tr>${serialRows}</table>`;
 
+        let fmiHtml = '';
+        if (fmiList.length > 0) {
+          fmiHtml = '<div style="margin-top:14px;"><h3 style="font-size:14px; margin-bottom:6px;">SAE FMI 세부 모드</h3>';
+          fmiList.forEach(f => {
+            fmiHtml += `
+              <div class="fmi-card">
+                <div class="fmi-header"><span class="badge-fmi">FMI ${f.fmi_code}</span> <b>탐지조건: ${f.detect_condition || '-'}</b></div>
+                <div style="margin-top:6px; font-size:13px;"><b>증상:</b> ${f.symptom || '없음'}</div>
+                <div style="margin-top:4px; font-size:13px;"><b>가능한 이유:</b> ${f.causes || '없음'}</div>
+                <div style="margin-top:4px; font-size:13px; color:#0369a1;"><b>조치:</b> ${f.actions || '없음'}</div>
+              </div>
+            `;
+          });
+          fmiHtml += '</div>';
+        }
+
         const renderBullets = (str) => {
           if (!str || str === '없음') return '<div class="bullet"><span>○</span><span>없음</span></div>';
-          return str.split('|').map(s => `<div class="bullet"><span>○</span><span>${s.trim()}</span></div>`).join('');
+          return str.split('|').map(s => `<div class="bullet"><span>○</span><span>${highlightText(s.trim(), keyword)}</span></div>`).join('');
         };
 
         const div = document.createElement('div');
         div.className = 'card';
         div.innerHTML = `
           <div class="card-header">
-            <div><span class="badge-dtc">${d.dtc}</span> <b style="margin-left:8px;">${d.comp_name || ''}</b></div>
-            <div><span style="font-size:12px; font-weight:bold; color:#0284c7;">[${d.doc_type}]</span></div>
+            <div class="card-header-left">
+              <span class="badge-dtc">${d.dtc}</span>
+              <span class="badge-type">${d.doc_type}</span>
+              <b style="font-size:14px;">${highlightText(d.comp_name, keyword)}</b>
+            </div>
+            <div class="card-actions">
+              <button class="action-btn" onclick="copyCardText('${d.dtc}')">📋 복사</button>
+            </div>
           </div>
           <div class="oem-sheet">
-            <h2 style="margin-bottom:12px;">${d.dtc}</h2>
+            <div class="oem-title">${highlightText(d.dtc, keyword)}</div>
             ${topTablesHtml}
             <table class="oem-tbl">
-              <tr><th style="width:30%;">컨트롤 유니트</th><td>${d.ecu || '-'}</td></tr>
-              <tr><th>DTC 코드, 시스템/구성부품, 고장 유형</th><td><b>${d.comp_name || d.dtc}</b></td></tr>
+              <tr><th>컨트롤 유니트</th><td>${highlightText(d.ecu, keyword)}</td></tr>
+              <tr><th>DTC 코드 / 구성부품</th><td><b>${highlightText(d.comp_name, keyword)}</b></td></tr>
+              ${d.display_msg && d.display_msg !== '-' ? `<tr><th>텍스트 표시</th><td>${highlightText(d.display_msg, keyword)}</td></tr>` : ''}
               ${d.standard ? `<tr><th>기준</th><td>${d.standard}</td></tr>` : ''}
             </table>
             <table class="oem-tbl">
-              <tr><th style="width:30%;">고장 이벤트</th><td>${d.event || '-'}</td></tr>
+              <tr><th>고장 이벤트</th><td>${highlightText(d.event, keyword)}</td></tr>
               <tr><th>증상</th><td>${renderBullets(d.symptom)}</td></tr>
               <tr><th>조건</th><td>${renderBullets(d.condition)}</td></tr>
               <tr><th>선행조치 DTC</th><td>${renderBullets(d.pre_dtc)}</td></tr>
               <tr><th>가능한 이유</th><td>${renderBullets(d.causes)}</td></tr>
-              <tr><th>조치</th><td>${renderBullets(d.actions)}</td></tr>
+              <tr><th>조치 내용</th><td>${renderBullets(d.actions)}</td></tr>
             </table>
+            ${fmiHtml}
           </div>
         `;
         box.appendChild(div);
       }
+    }
+
+    function copyCardText(dtc) {
+      navigator.clipboard.writeText(`[볼보 고장코드 진단] DTC: ${dtc}\n상세 내용은 매뉴얼 시스템을 확인하세요.`);
+      alert(`고장코드 [${dtc}] 정보가 클립보드에 복사되었습니다.`);
     }
   </script>
 </body>
