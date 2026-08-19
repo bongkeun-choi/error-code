@@ -3,12 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>볼보 진단 매뉴얼 뷰어</title>
+  <title>볼보 진단 매뉴얼 뷰어 & 관리자</title>
   <style>
     :root {
       --primary-dark: #0f172a;
       --accent: #0284c7;
       --danger: #dc2626;
+      --warning: #d97706;
       --sae-badge: #c2410c;
       --bg: #f8fafc;
       --card-bg: #ffffff;
@@ -34,10 +35,18 @@
     .status { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 14px; display: flex; justify-content: space-between; }
 
     .card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 24px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .card-header { padding: 12px 16px; background: #f1f5f9; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .card-header { padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+    .card-actions { display: flex; gap: 6px; }
+    
     .badge-dtc { background: var(--danger); color: white; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; }
     .badge-sae-dtc { background: var(--sae-badge); color: white; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; }
-    .btn-copy { background: white; border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
+    
+    .btn-action { background: white; border: 1px solid var(--border); padding: 4px 9px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; transition: 0.15s; }
+    .btn-action:hover { background: #e2e8f0; }
+    .btn-edit { color: var(--accent); border-color: #bae6fd; }
+    .btn-edit:hover { background: #f0f9ff; }
+    .btn-delete { color: var(--danger); border-color: #fecaca; }
+    .btn-delete:hover { background: #fef2f2; }
 
     .oem-sheet { padding: 20px; font-size: 13px; }
     .oem-title { font-size: 20px; font-weight: 900; margin-bottom: 14px; color: #000; }
@@ -49,6 +58,19 @@
     .bullet-icon { color: #000; font-weight: bold; }
     .highlight { background-color: #fef08a; padding: 1px 3px; border-radius: 2px; font-weight: bold; }
     .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); font-weight: bold; }
+
+    /* 수정 모달 */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 1000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(2px); }
+    .modal-box { background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
+    .modal-header { padding: 14px 20px; background: var(--primary-dark); color: white; display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; background: #f8fafc; }
+    .modal-footer { padding: 12px 20px; background: white; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 11.5px; font-weight: bold; color: var(--muted); margin-bottom: 4px; }
+    .form-input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; }
+    .form-input:focus { border-color: var(--accent); }
+    .form-textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; line-height: 1.4; resize: vertical; }
   </style>
 </head>
 <body>
@@ -71,11 +93,28 @@
     <div id="results"></div>
   </div>
 
+  <!-- ✏️ 개별 데이터 수정 모달 -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="editModalTitle" style="font-size:15px; font-weight:800;">진단서 내용 직접 수정</h3>
+        <button style="background:none; border:none; color:white; font-size:18px; cursor:pointer;" onclick="closeEditModal()">✕</button>
+      </div>
+      <div class="modal-body" id="editModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn-action" style="padding:8px 14px;" onclick="closeEditModal()">취소</button>
+        <button class="btn-action btn-edit" style="padding:8px 14px; background:var(--accent); color:white;" onclick="saveEditedRecord()">💾 수정 내용 저장</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const TURSO_URL = "https://volvoerror-bongkeun-choi.aws-ap-northeast-1.turso.io/v2/pipeline";
     const TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODcwOTA3MDQsImlkIjoiMDFhMDE1M2QtNDAwMS03OWU4LTlmYWUtNWJmZDMyZjcyMGE3Iiwia2lkIjoicEo1RHFMd2V3dHJZLTBXWGNxRTd0cnVRNWxrWDlYOVFJNTYxZl9lSC1YTSIsInJpZCI6IjY1YmYwM2JjLTc1ZmEtNGQ1NC05MzY0LWFhNjYzNjRlNzZjNyJ9.O2P-wN5MFUe6jCbxxxSrvtMZt_MyTyavApqJ-2se7NwSgCbi1byQezjfr6Ba49TWcou0Cg4hBq1xUOg7DAVSBg";
 
     let searchTimer = null;
+    let currentSearchResults = [];
+    let editingDtc = null;
 
     function handleSearch() {
       const q = document.getElementById('searchInput').value.trim();
@@ -139,11 +178,203 @@
           });
         }
 
+        currentSearchResults = items;
         const elapsed = (performance.now() - start).toFixed(1);
         statusEl.innerHTML = `<span>검색 결과 <b>${items.length}</b>건</span><span>응답속도: <b>${elapsed}ms</b></span>`;
         renderCards(items, q);
       } catch (e) {
         statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ 검색 오류: ${e.message}</span>`;
+      }
+    }
+
+    // =========================================================================
+    // [🗑️ 개별 삭제 기능]
+    // =========================================================================
+    async function deleteRecord(dtc) {
+      const confirmed = confirm(`정말 [${dtc}] 고장코드 진단서를 DB에서 완전히 삭제하시겠습니까?`);
+      if (!confirmed) return;
+
+      try {
+        const payload = {
+          requests: [{
+            type: "execute",
+            stmt: {
+              sql: "DELETE FROM diagnostics WHERE dtc = ?;",
+              args: [{ type: "text", value: dtc }]
+            }
+          }]
+        };
+
+        const res = await fetch(TURSO_URL, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          alert(`[${dtc}] 데이터가 DB에서 삭제되었습니다.`);
+          // 현재 검색 결과 다시 갱신
+          const q = document.getElementById('searchInput').value.trim();
+          executeSearch(q);
+        } else {
+          alert("삭제에 실패했습니다.");
+        }
+      } catch (e) {
+        alert("에러: " + e.message);
+      }
+    }
+
+    // =========================================================================
+    // [✏️ 개별 수정 기능]
+    // =========================================================================
+    function openEditModal(dtc) {
+      editingDtc = dtc;
+      const target = currentSearchResults.find(d => d.dtc === dtc);
+      if (!target) return;
+
+      let content = {};
+      try { content = JSON.parse(target.content_json); } catch(e) {}
+
+      document.getElementById('editModalTitle').innerText = `[${dtc}] 내용 직접 수정`;
+      const isSae = (target.doc_type || '').toUpperCase() === 'SAE';
+      const body = document.getElementById('editModalBody');
+
+      if (isSae) {
+        body.innerHTML = `
+          <div class="form-group">
+            <label>MID / 컨트롤 유니트</label>
+            <input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}">
+          </div>
+          <div class="form-group">
+            <label>PID/PPID/SID/PSID 파라미터명</label>
+            <input type="text" id="edit_param" class="form-input" value="${content.paramName || target.comp_name || ''}">
+          </div>
+          <div class="form-group">
+            <label>텍스트 프레젠테이션 (디스플레이 문구)</label>
+            <input type="text" id="edit_disp" class="form-input" value="${content.displayMsg || ''}">
+          </div>
+          <div class="form-group">
+            <label>기준</label>
+            <input type="text" id="edit_std" class="form-input" value="${content.standard || ''}">
+          </div>
+          <div class="form-group">
+            <label>FMI 블록 원본 (JSON 형식 수정 가능)</label>
+            <textarea id="edit_fmi_json" class="form-textarea" rows="6">${JSON.stringify(content.fmiList || [], null, 2)}</textarea>
+          </div>
+        `;
+      } else {
+        body.innerHTML = `
+          <div class="form-group">
+            <label>컨트롤 유니트</label>
+            <input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}">
+          </div>
+          <div class="form-group">
+            <label>DTC 코드 / 구성부품 / 고장 유형</label>
+            <input type="text" id="edit_comp" class="form-input" value="${content.compFull || target.comp_name || ''}">
+          </div>
+          <div class="form-group">
+            <label>기준</label>
+            <input type="text" id="edit_std" class="form-input" value="${content.standard || ''}">
+          </div>
+          <div class="form-group">
+            <label>고장 이벤트 (항목 구분은 ' | ' 사용)</label>
+            <textarea id="edit_event" class="form-textarea" rows="2">${content.event || ''}</textarea>
+          </div>
+          <div class="form-group">
+            <label>증상 (항목 구분은 ' | ' 사용)</label>
+            <textarea id="edit_symptom" class="form-textarea" rows="2">${content.symptom || ''}</textarea>
+          </div>
+          <div class="form-group">
+            <label>가능한 이유 (항목 구분은 ' | ' 사용)</label>
+            <textarea id="edit_causes" class="form-textarea" rows="3">${content.causes || ''}</textarea>
+          </div>
+          <div class="form-group">
+            <label>조치 내용 (항목 구분은 ' | ' 사용)</label>
+            <textarea id="edit_actions" class="form-textarea" rows="3">${content.actions || ''}</textarea>
+          </div>
+        `;
+      }
+
+      document.getElementById('editModal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').style.display = 'none';
+      editingDtc = null;
+    }
+
+    async function saveEditedRecord() {
+      if (!editingDtc) return;
+      const target = currentSearchResults.find(d => d.dtc === editingDtc);
+      if (!target) return;
+
+      let content = {};
+      try { content = JSON.parse(target.content_json); } catch(e) {}
+      const isSae = (target.doc_type || '').toUpperCase() === 'SAE';
+
+      if (isSae) {
+        content.ecu = document.getElementById('edit_ecu').value.trim();
+        content.paramName = document.getElementById('edit_param').value.trim();
+        content.displayMsg = document.getElementById('edit_disp').value.trim();
+        content.standard = document.getElementById('edit_std').value.trim();
+        try {
+          content.fmiList = JSON.parse(document.getElementById('edit_fmi_json').value);
+        } catch(e) {
+          alert('FMI JSON 형식에 오류가 있습니다.');
+          return;
+        }
+      } else {
+        content.ecu = document.getElementById('edit_ecu').value.trim();
+        content.compFull = document.getElementById('edit_comp').value.trim();
+        content.standard = document.getElementById('edit_std').value.trim();
+        content.event = document.getElementById('edit_event').value.trim();
+        content.symptom = document.getElementById('edit_symptom').value.trim();
+        content.causes = document.getElementById('edit_causes').value.trim();
+        content.actions = document.getElementById('edit_actions').value.trim();
+      }
+
+      const searchText = [
+        editingDtc, content.ecu, content.compFull || content.paramName,
+        content.standard, content.event || '', content.symptom || '', content.causes || '', content.actions || ''
+      ].join(' ');
+
+      const payload = {
+        requests: [{
+          type: "execute",
+          stmt: {
+            sql: `
+              UPDATE diagnostics 
+              SET ecu = ?, comp_name = ?, search_text = ?, content_json = ?, updated_at = CURRENT_TIMESTAMP 
+              WHERE dtc = ?;
+            `,
+            args: [
+              { type: "text", value: content.ecu || '-' },
+              { type: "text", value: content.compFull || content.paramName || editingDtc },
+              { type: "text", value: searchText },
+              { type: "text", value: JSON.stringify(content) },
+              { type: "text", value: editingDtc }
+            ]
+          }
+        }]
+      };
+
+      try {
+        const res = await fetch(TURSO_URL, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+          alert(`[${editingDtc}] 수정 내용이 DB에 성공적으로 저장되었습니다!`);
+          closeEditModal();
+          const q = document.getElementById('searchInput').value.trim();
+          executeSearch(q);
+        } else {
+          alert('수정 저장 실패');
+        }
+      } catch(e) {
+        alert('에러: ' + e.message);
       }
     }
 
@@ -170,8 +401,6 @@
         const specs = content.specs || {};
         
         let specTableHtml = '';
-        
-        // 1. 옵션/구성에 대해 유효 표
         if (specs.options && specs.options.length > 0) {
           specTableHtml += `
             <table class="oem-tbl">
@@ -191,7 +420,6 @@
           `;
         }
 
-        // 2. 일련 번호에 대해 유효 표
         if (specs.serials && specs.serials.length > 0) {
           specTableHtml += `
             <table class="oem-tbl">
@@ -253,16 +481,27 @@
         const div = document.createElement('div');
         div.className = 'card';
 
-        // -------------------------------------------------------------
-        // [A] SAE J1939 전용 렌더링
-        // -------------------------------------------------------------
+        // 카드 상단 헤더에 복사 / 수정 / 삭제 버튼 배치
+        const cardHeaderHtml = `
+          <div class="card-header">
+            <div>
+              <span class="${isSae ? 'badge-sae-dtc' : 'badge-dtc'}">${d.dtc}</span>
+              <b style="margin-left:8px; font-size:14px;">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</b>
+            </div>
+            <div class="card-actions">
+              <button class="btn-action" onclick="copyCard('${d.dtc}')">📋 복사</button>
+              <button class="btn-action btn-edit" onclick="openEditModal('${d.dtc}')">✏️ 수정</button>
+              <button class="btn-action btn-delete" onclick="deleteRecord('${d.dtc}')">🗑️ 삭제</button>
+            </div>
+          </div>
+        `;
+
         if (isSae) {
           const fmiList = content.fmiList || [];
           let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:bold; margin: 12px 0 6px;">고장 모드 진단</h3>';
 
           fmiList.forEach(f => {
             const condText = (f.cond && f.cond !== '-' && f.cond !== '없음') ? highlight(f.cond, keyword) : '';
-
             fmiBlocksHtml += `
               <table class="oem-tbl" style="margin-bottom:14px;">
                 <tr>
@@ -291,13 +530,7 @@
           });
 
           div.innerHTML = `
-            <div class="card-header">
-              <div>
-                <span class="badge-sae-dtc">${d.dtc}</span>
-                <b style="margin-left:8px; font-size:14px;">${highlight(content.paramName || d.comp_name, keyword)}</b>
-              </div>
-              <button class="btn-copy" onclick="copyCard('${d.dtc}')">📋 복사</button>
-            </div>
+            ${cardHeaderHtml}
             <div class="oem-sheet">
               <div class="oem-title">${highlight(d.dtc, keyword)}</div>
               ${specTableHtml}
@@ -312,19 +545,9 @@
               ${fmiBlocksHtml}
             </div>
           `;
-        } 
-        // -------------------------------------------------------------
-        // [B] ISO 표준 전용 렌더링
-        // -------------------------------------------------------------
-        else {
+        } else {
           div.innerHTML = `
-            <div class="card-header">
-              <div>
-                <span class="badge-dtc">${d.dtc}</span>
-                <b style="margin-left:8px; font-size:14px;">${highlight(content.compFull || d.comp_name, keyword)}</b>
-              </div>
-              <button class="btn-copy" onclick="copyCard('${d.dtc}')">📋 복사</button>
-            </div>
+            ${cardHeaderHtml}
             <div class="oem-sheet">
               <div class="oem-title">${highlight(d.dtc, keyword)}</div>
               ${specTableHtml}
