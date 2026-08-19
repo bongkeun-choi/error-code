@@ -3,13 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>볼보 진단 매뉴얼 뷰어 & 관리자</title>
+  <title>볼보 진단 매뉴얼 뷰어</title>
   <style>
     :root {
       --primary-dark: #0f172a;
       --accent: #0284c7;
       --danger: #dc2626;
       --warning: #d97706;
+      --variant-purple: #7c3aed;
       --sae-badge: #c2410c;
       --bg: #f8fafc;
       --card-bg: #ffffff;
@@ -36,11 +37,12 @@
 
     .card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 24px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .card-header { padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .card-actions { display: flex; gap: 6px; }
+    .card-actions { display: flex; gap: 6px; align-items: center; }
     
     .badge-dtc { background: var(--danger); color: white; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; }
     .badge-sae-dtc { background: var(--sae-badge); color: white; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; }
-    
+    .badge-model-tag { background: #ede9fe; color: var(--variant-purple); border: 1px solid #ddd6fe; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 800; }
+
     .btn-action { background: white; border: 1px solid var(--border); padding: 4px 9px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; transition: 0.15s; }
     .btn-action:hover { background: #e2e8f0; }
     .btn-edit { color: var(--accent); border-color: #bae6fd; }
@@ -85,7 +87,7 @@
 
   <div class="container">
     <div class="search-box">
-      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 검색 (예: B11B018, MID128 PID98, 붐 업)..." oninput="handleSearch()">
+      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 기종명(EW145B, EC300E) / 부품명 검색..." oninput="handleSearch()">
       <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
     </div>
 
@@ -93,7 +95,7 @@
     <div id="results"></div>
   </div>
 
-  <!-- ✏️ 개별 데이터 수정 모달 -->
+  <!-- ✏️ 수정 모달 -->
   <div class="modal-overlay" id="editModal">
     <div class="modal-box">
       <div class="modal-header">
@@ -114,13 +116,13 @@
 
     let searchTimer = null;
     let currentSearchResults = [];
-    let editingDtc = null;
+    let editingUniqueId = null;
 
     function handleSearch() {
       const q = document.getElementById('searchInput').value.trim();
       document.getElementById('clearBtn').style.display = q ? 'block' : 'none';
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => executeSearch(q), 120);
+      searchTimer = setTimeout(() => executeSearch(q), 100);
     }
 
     function clearSearch() {
@@ -142,9 +144,14 @@
 
       statusEl.innerText = '⚡ Turso Edge DB 검색 중...';
       const start = performance.now();
+      const qNoSpace = q.replace(/\s+/g, '');
 
       try {
-        const sql = `SELECT dtc, doc_type, ecu, comp_name, content_json FROM diagnostics WHERE dtc LIKE ? OR comp_name LIKE ? OR search_text LIKE ? LIMIT 10;`;
+        const sql = `
+          SELECT unique_id, dtc, model_name, doc_type, ecu, comp_name, content_json FROM diagnostics 
+          WHERE dtc LIKE ? OR dtc LIKE ? OR model_name LIKE ? OR comp_name LIKE ? OR search_text LIKE ? OR search_text LIKE ?
+          LIMIT 20;
+        `;
         const payload = {
           requests: [{
             type: "execute",
@@ -152,8 +159,11 @@
               sql,
               args: [
                 { type: "text", value: `%${q}%` },
+                { type: "text", value: `%${qNoSpace}%` },
                 { type: "text", value: `%${q}%` },
-                { type: "text", value: `%${q}%` }
+                { type: "text", value: `%${q}%` },
+                { type: "text", value: `%${q}%` },
+                { type: "text", value: `%${qNoSpace}%` }
               ]
             }
           }]
@@ -180,31 +190,21 @@
 
         currentSearchResults = items;
         const elapsed = (performance.now() - start).toFixed(1);
-        statusEl.innerHTML = `<span>검색 결과 <b>${items.length}</b>건</span><span>응답속도: <b>${elapsed}ms</b></span>`;
+        statusEl.innerHTML = `<span>검색 결과 <b>${items.length}</b>건 (기종별 독립 표시)</span><span>응답속도: <b>${elapsed}ms</b></span>`;
         renderCards(items, q);
       } catch (e) {
         statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ 검색 오류: ${e.message}</span>`;
       }
     }
 
-    // =========================================================================
-    // [🗑️ 개별 삭제 기능]
-    // =========================================================================
-    async function deleteRecord(dtc) {
-      const confirmed = confirm(`정말 [${dtc}] 고장코드 진단서를 DB에서 완전히 삭제하시겠습니까?`);
+    async function deleteRecord(uniqueId, dtc, model) {
+      const confirmed = confirm(`정말 [${dtc} - ${model}] 지침서를 DB에서 삭제하시겠습니까?`);
       if (!confirmed) return;
 
       try {
         const payload = {
-          requests: [{
-            type: "execute",
-            stmt: {
-              sql: "DELETE FROM diagnostics WHERE dtc = ?;",
-              args: [{ type: "text", value: dtc }]
-            }
-          }]
+          requests: [{ type: "execute", stmt: { sql: "DELETE FROM diagnostics WHERE unique_id = ?;", args: [{ type: "text", value: uniqueId }] } }]
         };
-
         const res = await fetch(TURSO_URL, {
           method: "POST",
           headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" },
@@ -212,86 +212,46 @@
         });
 
         if (res.ok) {
-          alert(`[${dtc}] 데이터가 DB에서 삭제되었습니다.`);
-          // 현재 검색 결과 다시 갱신
+          alert(`[${dtc} - ${model}] 데이터가 삭제되었습니다.`);
           const q = document.getElementById('searchInput').value.trim();
           executeSearch(q);
-        } else {
-          alert("삭제에 실패했습니다.");
         }
       } catch (e) {
         alert("에러: " + e.message);
       }
     }
 
-    // =========================================================================
-    // [✏️ 개별 수정 기능]
-    // =========================================================================
-    function openEditModal(dtc) {
-      editingDtc = dtc;
-      const target = currentSearchResults.find(d => d.dtc === dtc);
+    function openEditModal(uniqueId) {
+      editingUniqueId = uniqueId;
+      const target = currentSearchResults.find(d => d.unique_id === uniqueId);
       if (!target) return;
 
       let content = {};
       try { content = JSON.parse(target.content_json); } catch(e) {}
 
-      document.getElementById('editModalTitle').innerText = `[${dtc}] 내용 직접 수정`;
+      document.getElementById('editModalTitle').innerText = `[${target.dtc}] 내용 직접 수정 (기종: ${target.model_name})`;
       const isSae = (target.doc_type || '').toUpperCase() === 'SAE';
       const body = document.getElementById('editModalBody');
 
       if (isSae) {
         body.innerHTML = `
-          <div class="form-group">
-            <label>MID / 컨트롤 유니트</label>
-            <input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}">
-          </div>
-          <div class="form-group">
-            <label>PID/PPID/SID/PSID 파라미터명</label>
-            <input type="text" id="edit_param" class="form-input" value="${content.paramName || target.comp_name || ''}">
-          </div>
-          <div class="form-group">
-            <label>텍스트 프레젠테이션 (디스플레이 문구)</label>
-            <input type="text" id="edit_disp" class="form-input" value="${content.displayMsg || ''}">
-          </div>
-          <div class="form-group">
-            <label>기준</label>
-            <input type="text" id="edit_std" class="form-input" value="${content.standard || ''}">
-          </div>
-          <div class="form-group">
-            <label>FMI 블록 원본 (JSON 형식 수정 가능)</label>
-            <textarea id="edit_fmi_json" class="form-textarea" rows="6">${JSON.stringify(content.fmiList || [], null, 2)}</textarea>
-          </div>
+          <div class="form-group"><label>적용 기종명</label><input type="text" id="edit_model" class="form-input" value="${target.model_name || ''}"></div>
+          <div class="form-group"><label>MID / 컨트롤 유니트</label><input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}"></div>
+          <div class="form-group"><label>PID/PPID/SID/PSID 파라미터명</label><input type="text" id="edit_param" class="form-input" value="${content.paramName || target.comp_name || ''}"></div>
+          <div class="form-group"><label>텍스트 프레젠테이션</label><input type="text" id="edit_disp" class="form-input" value="${content.displayMsg || ''}"></div>
+          <div class="form-group"><label>기준</label><input type="text" id="edit_std" class="form-input" value="${content.standard || ''}"></div>
+          <div class="form-group"><label>FMI 블록 JSON</label><textarea id="edit_fmi_json" class="form-textarea" rows="6">${JSON.stringify(content.fmiList || [], null, 2)}</textarea></div>
         `;
       } else {
         body.innerHTML = `
-          <div class="form-group">
-            <label>컨트롤 유니트</label>
-            <input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}">
-          </div>
-          <div class="form-group">
-            <label>DTC 코드 / 구성부품 / 고장 유형</label>
-            <input type="text" id="edit_comp" class="form-input" value="${content.compFull || target.comp_name || ''}">
-          </div>
-          <div class="form-group">
-            <label>기준</label>
-            <input type="text" id="edit_std" class="form-input" value="${content.standard || ''}">
-          </div>
-          <div class="form-group">
-            <label>고장 이벤트 (항목 구분은 ' | ' 사용)</label>
-            <textarea id="edit_event" class="form-textarea" rows="2">${content.event || ''}</textarea>
-          </div>
-          <div class="form-group">
-            <label>증상 (항목 구분은 ' | ' 사용)</label>
-            <textarea id="edit_symptom" class="form-textarea" rows="2">${content.symptom || ''}</textarea>
-          </div>
-          <div class="form-group">
-            <label>가능한 이유 (항목 구분은 ' | ' 사용)</label>
-            <textarea id="edit_causes" class="form-textarea" rows="3">${content.causes || ''}</textarea>
-          </div>
-          <div class="form-group">
-            <label>조치 내용 (항목 구분은 ' | ' 사용)</label>
-            <textarea id="edit_actions" class="form-textarea" rows="3">${content.actions || ''}</textarea>
-          </div>
+          <div class="form-group"><label>적용 기종명</label><input type="text" id="edit_model" class="form-input" value="${target.model_name || ''}"></div>
+          <div class="form-group"><label>컨트롤 유니트</label><input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}"></div>
+          <div class="form-group"><label>DTC 코드 / 구성부품</label><input type="text" id="edit_comp" class="form-input" value="${content.compFull || target.comp_name || ''}"></div>
+          <div class="form-group"><label>기준</label><input type="text" id="edit_std" class="form-input" value="${content.standard || ''}"></div>
+          <div class="form-group"><label>고장 이벤트 (' | ' 구분)</label><textarea id="edit_event" class="form-textarea" rows="2">${content.event || ''}</textarea></div>
+          <div class="form-group"><label>증상 (' | ' 구분)</label><textarea id="edit_symptom" class="form-textarea" rows="2">${content.symptom || ''}</textarea></div>
+          <div class="form-group"><label>가능한 이유 (' | ' 구분)</label><textarea id="edit_causes" class="form-textarea" rows="3">${content.causes || ''}</textarea></div>
+          <div class="form-group"><label>조치 내용 (' | ' 구분)</label><textarea id="edit_actions" class="form-textarea" rows="3">${content.actions || ''}</textarea></div>
         `;
       }
 
@@ -300,29 +260,25 @@
 
     function closeEditModal() {
       document.getElementById('editModal').style.display = 'none';
-      editingDtc = null;
+      editingUniqueId = null;
     }
 
     async function saveEditedRecord() {
-      if (!editingDtc) return;
-      const target = currentSearchResults.find(d => d.dtc === editingDtc);
+      if (!editingUniqueId) return;
+      const target = currentSearchResults.find(d => d.unique_id === editingUniqueId);
       if (!target) return;
 
       let content = {};
       try { content = JSON.parse(target.content_json); } catch(e) {}
       const isSae = (target.doc_type || '').toUpperCase() === 'SAE';
+      const newModel = document.getElementById('edit_model').value.trim();
 
       if (isSae) {
         content.ecu = document.getElementById('edit_ecu').value.trim();
         content.paramName = document.getElementById('edit_param').value.trim();
         content.displayMsg = document.getElementById('edit_disp').value.trim();
         content.standard = document.getElementById('edit_std').value.trim();
-        try {
-          content.fmiList = JSON.parse(document.getElementById('edit_fmi_json').value);
-        } catch(e) {
-          alert('FMI JSON 형식에 오류가 있습니다.');
-          return;
-        }
+        try { content.fmiList = JSON.parse(document.getElementById('edit_fmi_json').value); } catch(e) { alert('FMI JSON 오류'); return; }
       } else {
         content.ecu = document.getElementById('edit_ecu').value.trim();
         content.compFull = document.getElementById('edit_comp').value.trim();
@@ -333,26 +289,28 @@
         content.actions = document.getElementById('edit_actions').value.trim();
       }
 
+      const specsText = [
+        ...(content.specs?.options || []).map(o => `${o.model} ${o.optNo} ${o.optName} ${o.optConfig}`),
+        ...(content.specs?.serials || []).map(s => `${s.model} ${s.factory} ${s.start} ${s.end}`)
+      ].join(' ');
+
       const searchText = [
-        editingDtc, content.ecu, content.compFull || content.paramName,
-        content.standard, content.event || '', content.symptom || '', content.causes || '', content.actions || ''
+        target.dtc, target.dtc.replace(/\s+/g, ''), newModel, content.ecu, content.compFull || content.paramName,
+        content.standard, content.event || '', content.symptom || '', content.causes || '', content.actions || '', specsText
       ].join(' ');
 
       const payload = {
         requests: [{
           type: "execute",
           stmt: {
-            sql: `
-              UPDATE diagnostics 
-              SET ecu = ?, comp_name = ?, search_text = ?, content_json = ?, updated_at = CURRENT_TIMESTAMP 
-              WHERE dtc = ?;
-            `,
+            sql: `UPDATE diagnostics SET model_name = ?, ecu = ?, comp_name = ?, search_text = ?, content_json = ?, updated_at = CURRENT_TIMESTAMP WHERE unique_id = ?;`,
             args: [
+              { type: "text", value: newModel },
               { type: "text", value: content.ecu || '-' },
-              { type: "text", value: content.compFull || content.paramName || editingDtc },
+              { type: "text", value: content.compFull || content.paramName || target.dtc },
               { type: "text", value: searchText },
               { type: "text", value: JSON.stringify(content) },
-              { type: "text", value: editingDtc }
+              { type: "text", value: editingUniqueId }
             ]
           }
         }]
@@ -364,18 +322,13 @@
           headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-
         if (res.ok) {
-          alert(`[${editingDtc}] 수정 내용이 DB에 성공적으로 저장되었습니다!`);
+          alert(`수정 내용이 저장되었습니다.`);
           closeEditModal();
           const q = document.getElementById('searchInput').value.trim();
           executeSearch(q);
-        } else {
-          alert('수정 저장 실패');
         }
-      } catch(e) {
-        alert('에러: ' + e.message);
-      }
+      } catch(e) { alert('에러: ' + e.message); }
     }
 
     function highlight(text, keyword) {
@@ -395,7 +348,7 @@
 
       items.forEach(d => {
         let content = {};
-        try { content = JSON.parse(d.content_json); } catch(e) { content = {}; }
+        try { content = JSON.parse(d.content_json); } catch(e) {}
 
         const isSae = (d.doc_type || '').toUpperCase() === 'SAE' || (content.doc_type || '').toUpperCase() === 'SAE';
         const specs = content.specs || {};
@@ -410,10 +363,10 @@
               </tr>
               ${specs.options.map(o => `
                 <tr>
-                  <td>${o.model || 'EC300E L Volvo'}</td>
-                  <td>${o.optNo || ''}</td>
-                  <td>${o.optName || ''}</td>
-                  <td>${o.optConfig || ''}</td>
+                  <td>${highlight(o.model || d.model_name, keyword)}</td>
+                  <td>${highlight(o.optNo || '', keyword)}</td>
+                  <td>${highlight(o.optName || '', keyword)}</td>
+                  <td>${highlight(o.optConfig || '', keyword)}</td>
                 </tr>
               `).join('')}
             </table>
@@ -429,10 +382,10 @@
               </tr>
               ${specs.serials.map(s => `
                 <tr>
-                  <td>${s.model || (isSae ? 'EC290B LC Volvo' : 'EC300E L Volvo')}</td>
-                  <td>${s.factory || ''}</td>
-                  <td>${s.start || ''}</td>
-                  <td>${s.end || ''}</td>
+                  <td>${highlight(s.model || d.model_name, keyword)}</td>
+                  <td>${highlight(s.factory || '', keyword)}</td>
+                  <td>${highlight(s.start || '', keyword)}</td>
+                  <td>${highlight(s.end || '', keyword)}</td>
                 </tr>
               `).join('')}
             </table>
@@ -481,17 +434,17 @@
         const div = document.createElement('div');
         div.className = 'card';
 
-        // 카드 상단 헤더에 복사 / 수정 / 삭제 버튼 배치
         const cardHeaderHtml = `
           <div class="card-header">
-            <div>
+            <div style="display:flex; align-items:center; gap:8px;">
               <span class="${isSae ? 'badge-sae-dtc' : 'badge-dtc'}">${d.dtc}</span>
-              <b style="margin-left:8px; font-size:14px;">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</b>
+              <span class="badge-model-tag">🚜 ${d.model_name || 'Volvo'}</span>
+              <b style="font-size:13.5px;">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</b>
             </div>
             <div class="card-actions">
               <button class="btn-action" onclick="copyCard('${d.dtc}')">📋 복사</button>
-              <button class="btn-action btn-edit" onclick="openEditModal('${d.dtc}')">✏️ 수정</button>
-              <button class="btn-action btn-delete" onclick="deleteRecord('${d.dtc}')">🗑️ 삭제</button>
+              <button class="btn-action btn-edit" onclick="openEditModal('${d.unique_id}')">✏️ 수정</button>
+              <button class="btn-action btn-delete" onclick="deleteRecord('${d.unique_id}', '${d.dtc}', '${d.model_name}')">🗑️ 삭제</button>
             </div>
           </div>
         `;
