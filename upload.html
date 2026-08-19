@@ -51,7 +51,6 @@
     .progress-wrap { display: none; margin-top: 14px; background: #e2e8f0; border-radius: 8px; height: 16px; overflow: hidden; }
     .progress-bar { height: 100%; width: 0%; background: var(--success); transition: width 0.2s; }
 
-    /* JSON 모달 */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
     .modal-box { background: white; width: 100%; max-width: 800px; max-height: 85vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
     .modal-header { padding: 14px 20px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -101,6 +100,7 @@
             <th>상태</th>
             <th>고장코드</th>
             <th>규격</th>
+            <th>사양 (호기수)</th>
             <th>컨트롤 유니트</th>
             <th>구성부품 / 고장유형</th>
             <th>구조화 데이터 미리보기</th>
@@ -251,13 +251,38 @@
         if (!text) return;
         const cleanB = (t) => t.replace(/^[¡○•●\-\s:]+/, '').trim();
 
+        // 1. 일련번호 표 파싱 (호기수 없는 빈칸 행도 100% 보존)
         if (slot === 'SPECS_SERIAL') {
+          if (text.includes('생산 사업장') || text.includes('일련 번호 시작') || text.includes('모델 종류:')) return;
+          
           const m = text.match(/(Changwon|Shanghai|창원|상하이)\s+(\d{4,8})\s+(\d{4,8})/i);
-          if (m) specs.push({ type: "SERIAL", model: "EC300E L Volvo", factory: m[1], start: m[2], end: m[3] });
-        } else if (slot === 'SPECS_OPT') {
+          if (m) {
+            const model = text.replace(m[0], '').replace('모델 종류:', '').trim() || "EC300E L Volvo";
+            specs.push({ type: "SERIAL", model: model, factory: m[1], start: m[2], end: m[3] });
+          } else {
+            // 생산 사업장/호기수가 빈칸인 경우 -> 빈칸 그대로 보존 (가짜 데이터 삽입 안 함!)
+            const modelOnly = text.replace('모델 종류:', '').trim();
+            if (modelOnly && !specs.some(s => s.model === modelOnly && s.factory === "")) {
+              specs.push({ type: "SERIAL", model: modelOnly, factory: "", start: "", end: "" });
+            }
+          }
+        } 
+        // 2. 옵션 표 파싱
+        else if (slot === 'SPECS_OPT') {
+          if (text.includes('옵션 번호') || text.includes('모델 종류:')) return;
+
           const m = text.match(/(\d{6,8})\s+([A-Za-z0-9\s]+?)\s+(Volvo\s+Active\s+Control|[A-Za-z0-9\s]+)/i);
-          if (m) specs.push({ type: "OPTION", model: "EC300E L Volvo", opt_no: m[1], opt_name: m[2].trim(), opt_config: m[3].trim() });
-        } else if (slot === 'ECU') {
+          if (m) {
+            const model = text.replace(m[0], '').replace('모델 종류:', '').trim() || "EC300E L Volvo";
+            specs.push({ type: "OPTION", model: model, opt_no: m[1], opt_name: m[2].trim(), opt_config: m[3].trim() });
+          } else {
+            const modelOnly = text.replace('모델 종류:', '').trim();
+            if (modelOnly && !specs.some(s => s.model === modelOnly)) {
+              specs.push({ type: "OPTION", model: modelOnly, opt_no: "", opt_name: "", opt_config: "" });
+            }
+          }
+        } 
+        else if (slot === 'ECU') {
           ecu = (ecu ? ecu + ' ' : '') + text;
         } else if (slot === 'COMP') {
           compName = (compName ? compName + ' ' : '') + text;
@@ -285,8 +310,9 @@
 
       const validPreDtcs = [...new Set(preDtcs)].filter(c => c !== dtc && !c.startsWith('DTC'));
 
+      // 가짜 데이터 하드코딩 완전 제거 (있는 그대로만 저장)
       const contentObj = {
-        specs: specs.length > 0 ? specs : [{ type: "SERIAL", model: "EC300E L Volvo", factory: "Changwon", start: "310001", end: "320000" }],
+        specs: specs,
         standard: standard.trim(),
         event: event.trim() || "-",
         symptoms: symptoms.filter(s => s && s !== '없음'),
@@ -301,12 +327,15 @@
         ...contentObj.symptoms, ...contentObj.causes, ...contentObj.actions
       ].join(' ');
 
+      const specSummary = specs.map(s => s.factory ? `${s.factory}(${s.start}~${s.end})` : `${s.model || '공통'}(빈칸)`).join(', ') || '전 기종 공통';
+
       return {
         filename,
         dtc: dtc.toUpperCase(),
         doc_type: docType,
         ecu: ecu.trim() || "일반 용도 장비의 전자 컨트롤 유닛 1",
         comp_name: compName.trim() || dtc,
+        spec_summary: specSummary,
         search_text: searchText,
         content_json: JSON.stringify(contentObj, null, 2),
         contentObj,
@@ -383,6 +412,7 @@
           <td>${isDup ? '<span class="badge badge-dup">⚠️ 덮어쓰기</span>' : '<span class="badge badge-new">🟢 신규</span>'}</td>
           <td><b style="color:var(--danger); font-size:14px;">${item.dtc}</b></td>
           <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${item.doc_type}</span></td>
+          <td style="font-size:11.5px; color:#475569;">${item.spec_summary}</td>
           <td>${item.ecu}</td>
           <td>${item.comp_name}</td>
           <td><button class="btn-preview" onclick="openJsonModal(${idx})">📋 JSON 보기</button></td>
@@ -506,7 +536,7 @@
 
       btn.disabled = false;
       btn.innerText = "⚡ Turso DB로 JSON 일괄 적재";
-      alert(`🎉 DB 적재 완료!\n총 ${targets.length}개 항목 중 ${successCount}개가 Turso DB에 완벽한 구조화 JSON으로 저장되었습니다.`);
+      alert(`🎉 DB 적재 완료!\n총 ${targets.length}개 항목 중 ${successCount}개가 Turso DB에 완벽하게 저장되었습니다.`);
     }
   </script>
 </body>

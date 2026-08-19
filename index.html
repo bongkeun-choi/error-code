@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>볼보 진단 매뉴얼 뷰어 (JSON Engine)</title>
+  <title>볼보 진단 매뉴얼 뷰어 (OEM 1:1)</title>
   <style>
     :root {
       --primary-dark: #0f172a;
@@ -32,13 +32,11 @@
 
     .status { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 14px; display: flex; justify-content: space-between; }
 
-    /* 결과 카드 */
     .card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 20px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .card-header { padding: 12px 16px; background: #f1f5f9; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
     .badge-dtc { background: var(--danger); color: white; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; }
     .btn-copy { background: white; border: 1px solid var(--border); padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; }
 
-    /* 볼보 OEM 스타일 시트 */
     .oem-sheet { padding: 20px; font-size: 13.5px; }
     .oem-title { font-size: 20px; font-weight: 900; margin-bottom: 14px; color: #000; }
     .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 14px; }
@@ -63,7 +61,7 @@
 
   <div class="container">
     <div class="search-box">
-      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 / 증상 검색 (예: B100611, B100C12, 압력 센서)..." oninput="handleSearch()">
+      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 / 증상 검색 (예: B100611, B100C12)..." oninput="handleSearch()">
       <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
     </div>
 
@@ -166,20 +164,23 @@
         let content = {};
         try { content = JSON.parse(d.content_json); } catch(e) { content = {}; }
 
-        // 사양 표 생성
         const specs = content.specs || [];
         const serials = specs.filter(s => s.type === 'SERIAL');
         const options = specs.filter(s => s.type === 'OPTION');
 
         let specTablesHtml = '';
+        // 원본과 동일하게 빈칸은 빈칸 그대로 렌더링 (가짜 기본값 없음)
         if (serials.length > 0) {
           specTablesHtml += `
             <table class="oem-tbl">
               <tr><th colspan="4">일련 번호에 대해 유효</th></tr>
               <tr style="background:#f8fafc; font-weight:bold;">
-                <td>모델 종류:</td><td>생산 사업장</td><td>일련 번호 시작</td><td>일련 번호 종료</td>
+                <td style="width:25%;">모델 종류:</td>
+                <td style="width:25%;">생산 사업장</td>
+                <td style="width:25%;">일련 번호 시작</td>
+                <td style="width:25%;">일련 번호 종료</td>
               </tr>
-              ${serials.map(s => `<tr><td>${s.model || '-'}</td><td>${s.factory || '-'}</td><td>${s.start || '-'}</td><td>${s.end || '-'}</td></tr>`).join('')}
+              ${serials.map(s => `<tr><td>${s.model || 'EC300E L Volvo'}</td><td>${s.factory || ''}</td><td>${s.start || ''}</td><td>${s.end || ''}</td></tr>`).join('')}
             </table>
           `;
         }
@@ -188,9 +189,12 @@
             <table class="oem-tbl">
               <tr><th colspan="4">옵션/구성에 대해 유효</th></tr>
               <tr style="background:#f8fafc; font-weight:bold;">
-                <td>모델 종류:</td><td>옵션 번호</td><td>옵션</td><td>구성</td>
+                <td style="width:25%;">모델 종류:</td>
+                <td style="width:25%;">옵션 번호</td>
+                <td style="width:25%;">옵션</td>
+                <td style="width:25%;">구성</td>
               </tr>
-              ${options.map(s => `<tr><td>${s.model || '-'}</td><td>${s.opt_no || '-'}</td><td>${s.opt_name || '-'}</td><td>${s.opt_config || '-'}</td></tr>`).join('')}
+              ${options.map(s => `<tr><td>${s.model || 'EC300E L Volvo'}</td><td>${s.opt_no || ''}</td><td>${s.opt_name || ''}</td><td>${s.opt_config || ''}</td></tr>`).join('')}
             </table>
           `;
         }
