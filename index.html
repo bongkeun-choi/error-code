@@ -13,7 +13,6 @@
        1. 디자인 테마 변수 시스템 (네이버페이 / 다크모드 / OEM)
        ======================================================== */
     :root {
-      /* 기본 네이버페이 모바일 테마 */
       --np-green: #03c75a;
       --np-green-light: #e8f9ef;
       --np-green-dark: #029f48;
@@ -31,11 +30,11 @@
       --header-bg: #03c75a;
       --header-text: #ffffff;
       --text: #111111;
-      --text-sub: #666666;
+      --text-sub: #555555;
       --text-muted: #8e95a0;
       --border: #eaedf0;
       --border-strong: #dbe0e5;
-      --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      --card-shadow: 0 3px 12px rgba(0, 0, 0, 0.04);
       --chip-bg: #ffffff;
       --chip-text: #333333;
       --chip-border: #e2e5e8;
@@ -83,7 +82,7 @@
     }
 
     /* ========================================================
-       2. 네이버페이 스타일 상단 헤더
+       2. 상단 헤더 & 볼보 엠블럼
        ======================================================== */
     .np-header {
       background: var(--header-bg);
@@ -101,7 +100,7 @@
     .np-header-brand {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
       font-size: 17px;
       font-weight: 900;
       letter-spacing: -0.5px;
@@ -145,12 +144,10 @@
       gap: 4px;
       backdrop-filter: blur(4px);
     }
-    .np-btn-uploader:active {
-      transform: scale(0.95);
-    }
+    .np-btn-uploader:active { transform: scale(0.95); }
 
     /* ========================================================
-       3. 모드 전환 세그먼트 컨트롤 (네이버페이 카드 / OEM 표 / 야간모드)
+       3. 모드 전환 세그먼트 컨트롤 & 테마 버튼
        ======================================================== */
     .mode-switch-container {
       max-width: 960px;
@@ -189,11 +186,6 @@
       color: #ffffff;
       box-shadow: 0 2px 6px rgba(3, 199, 90, 0.35);
     }
-    html[data-theme="dark"] .seg-tab.active {
-      background: #03c75a;
-      color: #ffffff;
-    }
-
     .theme-toggle-btn {
       background: var(--chip-bg);
       border: 1px solid var(--border-strong);
@@ -208,12 +200,10 @@
       gap: 5px;
       transition: all 0.15s;
     }
-    .theme-toggle-btn:active {
-      transform: scale(0.95);
-    }
+    .theme-toggle-btn:active { transform: scale(0.95); }
 
     /* ========================================================
-       4. 네이버페이 검색바 & 퀵 필터 칩
+       4. 검색바 & 퀵 필터 칩
        ======================================================== */
     .container {
       max-width: 960px;
@@ -278,11 +268,8 @@
       font-size: 13px;
       font-weight: bold;
     }
-    .clear-btn:active {
-      transform: scale(0.9);
-    }
+    .clear-btn:active { transform: scale(0.9); }
 
-    /* 칩 태그 바 */
     .chips-scroll-wrap {
       margin-top: 10px;
       display: flex;
@@ -309,9 +296,7 @@
       box-shadow: 0 1px 4px rgba(0,0,0,0.03);
       transition: all 0.15s;
     }
-    .np-chip:active {
-      transform: scale(0.94);
-    }
+    .np-chip:active { transform: scale(0.94); }
     .np-chip.active, .np-chip:hover {
       background: var(--np-green);
       color: white;
@@ -319,97 +304,170 @@
       box-shadow: 0 2px 8px rgba(3, 199, 90, 0.3);
     }
 
+    /* 상태 표시줄 & 전체 펼치기/접기 버튼 */
     .status-bar {
       font-size: 12.5px;
       color: var(--text-muted);
       font-weight: 600;
-      margin: 6px 2px 12px;
+      margin: 6px 2px 10px;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
+    .bulk-toggle-btn {
+      background: var(--chip-bg);
+      border: 1px solid var(--border-strong);
+      padding: 4px 9px;
+      border-radius: 14px;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-sub);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.15s;
+    }
+    .bulk-toggle-btn:active { transform: scale(0.95); }
 
     /* ========================================================
-       5. [모드 1 & 3] 네이버페이 모바일 스마트 카드 뷰
+       5. 🗂️ 아코디언(접기/펼치기) 카드 시스템
        ======================================================== */
     .np-card {
       background: var(--card-bg);
-      border-radius: 18px;
+      border-radius: 16px;
       border: 1px solid var(--border);
       box-shadow: var(--card-shadow);
-      margin-bottom: 18px;
+      margin-bottom: 12px;
       overflow: hidden;
-      transition: all 0.2s;
+      transition: all 0.2s ease;
     }
-    .np-card-top {
+    
+    /* 요약 헤더 (항상 노출, 터치하여 펼침/접힘) */
+    .np-card-summary {
       padding: 14px 16px;
-      background: var(--card-bg);
-      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      background: var(--card-bg);
+      transition: background 0.15s;
     }
-    @media (min-width: 640px) {
-      .np-card-top {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
+    .np-card-summary:active {
+      background: var(--box-inner-bg);
+    }
+    .np-summary-row1 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .np-card-header-left {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 8px;
+      gap: 7px;
     }
     .badge-dtc-np {
       background: #ff3b30;
       color: white;
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-size: 14px;
+      padding: 4px 9px;
+      border-radius: 7px;
+      font-size: 13.5px;
       font-weight: 900;
       letter-spacing: -0.3px;
-      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.25);
+      box-shadow: 0 2px 5px rgba(255, 59, 48, 0.25);
     }
     .badge-sae-np {
       background: #ff9500;
       color: white;
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-size: 14px;
+      padding: 4px 9px;
+      border-radius: 7px;
+      font-size: 13.5px;
       font-weight: 900;
       letter-spacing: -0.3px;
-      box-shadow: 0 2px 6px rgba(255, 149, 0, 0.25);
+      box-shadow: 0 2px 5px rgba(255, 149, 0, 0.25);
     }
     .badge-model-np {
       background: var(--np-green-light);
       color: var(--np-green-dark);
       border: 1px solid rgba(3, 199, 90, 0.25);
-      padding: 4px 9px;
-      border-radius: 8px;
+      padding: 3px 8px;
+      border-radius: 7px;
       font-size: 12px;
       font-weight: 800;
     }
-    html[data-theme="dark"] .badge-model-np {
-      color: #03c75a;
+    html[data-theme="dark"] .badge-model-np { color: #03c75a; }
+
+    /* 펼침/접힘 인디케이터 */
+    .expand-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--np-green);
+      background: var(--np-green-light);
+      padding: 4px 10px;
+      border-radius: 20px;
+      flex-shrink: 0;
+      transition: transform 0.2s ease;
+    }
+    .expand-arrow {
+      font-size: 10px;
+      transition: transform 0.25s ease;
+    }
+    .np-card.expanded .expand-arrow {
+      transform: rotate(180deg);
+    }
+    .np-card.expanded .expand-indicator {
+      background: var(--border-strong);
+      color: var(--text-sub);
+    }
+
+    /* 요약 2행: 부품명 & 간략 설명 */
+    .np-summary-row2 {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
     .np-comp-title {
-      font-size: 14px;
+      font-size: 14.5px;
       font-weight: 800;
       color: var(--text);
       word-break: break-word;
+      line-height: 1.35;
+    }
+    .np-summary-snippet {
+      font-size: 12.5px;
+      color: var(--text-sub);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .np-card-actions {
-      display: flex;
-      gap: 6px;
-      align-items: center;
-      width: 100%;
-      justify-content: flex-end;
+    /* 📖 상세 내용 영역 (기본적으로 숨김, expanded 클래스 시 노출) */
+    .np-card-detail {
+      display: none;
+      padding: 0 16px 16px;
+      border-top: 1px dashed var(--border-strong);
+      background: var(--card-bg);
+      animation: fadeIn 0.2s ease-out;
     }
-    @media (min-width: 640px) {
-      .np-card-actions { width: auto; }
+    .np-card.expanded .np-card-detail {
+      display: block;
+    }
+
+    .np-card-actions-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+      padding: 12px 0 10px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
     }
     .np-action-btn {
       background: var(--chip-bg);
@@ -429,14 +487,11 @@
     .np-action-edit { color: var(--np-blue); border-color: rgba(0,119,255,0.3); background: var(--np-blue-light); }
     .np-action-delete { color: var(--np-red); border-color: rgba(244,67,54,0.3); background: var(--np-red-light); }
 
-    .np-card-content {
-      padding: 16px;
-    }
     .np-dtc-main-title {
-      font-size: 18px;
+      font-size: 17px;
       font-weight: 900;
       color: var(--text);
-      margin-bottom: 14px;
+      margin-bottom: 12px;
       line-height: 1.35;
       letter-spacing: -0.3px;
     }
@@ -514,11 +569,9 @@
       gap: 10px;
     }
 
-    /* ========================================================
-       6. [모드 2] 원래 처음 모드 (OEM 원본 표 모드)
-       ======================================================== */
-    .oem-sheet { padding: 16px; font-size: 13px; }
-    .oem-title { font-size: 18px; font-weight: 900; margin-bottom: 12px; color: var(--text); }
+    /* OEM 원본 표 모드 스타일 */
+    .oem-sheet { padding-top: 10px; font-size: 13px; }
+    .oem-title { font-size: 17px; font-weight: 900; margin-bottom: 12px; color: var(--text); }
     .oem-tbl-wrap { overflow-x: auto; margin-bottom: 14px; -webkit-overflow-scrolling: touch; }
     .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid var(--border-strong); font-size: 12.5px; }
     .oem-tbl th, .oem-tbl td { border: 1px solid var(--border); padding: 7px 10px; vertical-align: top; line-height: 1.45; }
@@ -639,7 +692,7 @@
 </head>
 <body>
 
-  <!-- 🟢 상단 네이버페이 헤더 -->
+  <!-- 🟢 상단 볼보 헤더 -->
   <div class="np-header">
     <div class="np-header-brand">
       <span class="volvo-logo-badge" title="Volvo Construction Equipment">
@@ -705,19 +758,23 @@
       </div>
     </div>
 
-    <!-- 상태 표시줄 -->
-    <div class="status-bar" id="status">
-      <span>💡 검색어를 입력하거나 위 칩을 터치하세요.</span>
+    <!-- 상태 표시줄 & 전체 펼치기/접기 버튼 -->
+    <div class="status-bar" id="statusBarWrap">
+      <span id="status">💡 검색어를 입력하거나 위 칩을 터치하세요.</span>
+      <button class="bulk-toggle-btn" id="bulkToggleBtn" style="display:none;" onclick="toggleAllCards()">
+        <span id="bulkToggleText">전체 펼치기 ▾</span>
+      </button>
     </div>
 
     <!-- 검색 결과 목록 -->
     <div id="results">
       <div class="empty-state">
         <div class="empty-state-icon">📱</div>
-        <div class="empty-state-title">네이버페이 스타일 모바일 뷰어</div>
+        <div class="empty-state-title">네이버페이 스타일 간편 검색</div>
         <div class="empty-state-desc">
           상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
-          굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.
+          굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.<br><br>
+          <span style="color:var(--np-green); font-weight:700;">💡 검색 결과 터치 시 상세 진단서가 펼쳐집니다.</span>
         </div>
       </div>
     </div>
@@ -748,12 +805,12 @@
     let searchTimer = null;
     let currentSearchResults = [];
     let editingUniqueId = null;
+    let areAllExpanded = false;
 
     // 현재 뷰 모드 ('card' | 'table') 및 테마 ('naver' | 'dark')
     let currentViewMode = localStorage.getItem('volvo_view_mode') || 'card';
     let currentTheme = localStorage.getItem('volvo_theme') || 'naver';
 
-    // 초기화
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(currentTheme);
       applyViewMode(currentViewMode);
@@ -804,6 +861,38 @@
       }
     }
 
+    // 카드 아코디언 토글 (개별)
+    function toggleCard(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const isExp = card.classList.toggle('expanded');
+      const btn = card.querySelector('.expand-indicator span:first-child');
+      if (btn) {
+        btn.innerText = isExp ? '접기' : '펼치기';
+      }
+    }
+
+    // 전체 카드 일괄 펼치기 / 접기
+    function toggleAllCards() {
+      const cards = document.querySelectorAll('.np-card');
+      areAllExpanded = !areAllExpanded;
+      cards.forEach(card => {
+        if (areAllExpanded) {
+          card.classList.add('expanded');
+          const btn = card.querySelector('.expand-indicator span:first-child');
+          if (btn) btn.innerText = '접기';
+        } else {
+          card.classList.remove('expanded');
+          const btn = card.querySelector('.expand-indicator span:first-child');
+          if (btn) btn.innerText = '펼치기';
+        }
+      });
+      const bulkBtnText = document.getElementById('bulkToggleText');
+      if (bulkBtnText) {
+        bulkBtnText.innerText = areAllExpanded ? '전체 접기 ▴' : '전체 펼치기 ▾';
+      }
+    }
+
     // 플로팅 스크롤 버튼
     window.addEventListener('scroll', () => {
       const btn = document.getElementById('scrollTopBtn');
@@ -838,19 +927,22 @@
       document.getElementById('results').innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">📱</div>
-          <div class="empty-state-title">네이버페이 스타일 모바일 뷰어</div>
+          <div class="empty-state-title">네이버페이 스타일 간편 검색</div>
           <div class="empty-state-desc">
             상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
-            굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.
+            굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.<br><br>
+            <span style="color:var(--np-green); font-weight:700;">💡 검색 결과 터치 시 상세 진단서가 펼쳐집니다.</span>
           </div>
         </div>
       `;
-      document.getElementById('status').innerHTML = '<span>💡 검색어를 입력하거나 위 칩을 터치하세요.</span>';
+      document.getElementById('status').innerText = '💡 검색어를 입력하거나 위 칩을 터치하세요.';
+      document.getElementById('bulkToggleBtn').style.display = 'none';
     }
 
     async function executeSearch(q) {
       const statusEl = document.getElementById('status');
       const resultsEl = document.getElementById('results');
+      const bulkBtn = document.getElementById('bulkToggleBtn');
 
       if (q.length < 2) {
         resultsEl.innerHTML = `
@@ -860,11 +952,12 @@
             <div class="empty-state-desc">예: EW145, EC300, SE2701, MID 128, 111</div>
           </div>
         `;
-        statusEl.innerHTML = '<span>검색어를 2글자 이상 입력하세요.</span>';
+        statusEl.innerText = '검색어를 2글자 이상 입력하세요.';
+        bulkBtn.style.display = 'none';
         return;
       }
 
-      statusEl.innerHTML = '<span>⚡ Turso Edge DB 검색 중...</span>';
+      statusEl.innerText = '⚡ Turso Edge DB 검색 중...';
       const start = performance.now();
       const qNoSpace = q.replace(/\s+/g, '');
 
@@ -912,10 +1005,20 @@
 
         currentSearchResults = items;
         const elapsed = (performance.now() - start).toFixed(1);
-        statusEl.innerHTML = `<span>검색 결과 <b>${items.length}</b>건</span><span>응답 <b>${elapsed}ms</b></span>`;
+        statusEl.innerHTML = `검색 결과 <b>${items.length}</b>건 (응답 <b>${elapsed}ms</b>)`;
+        
+        if (items.length > 0) {
+          bulkBtn.style.display = 'inline-flex';
+          areAllExpanded = false;
+          document.getElementById('bulkToggleText').innerText = '전체 펼치기 ▾';
+        } else {
+          bulkBtn.style.display = 'none';
+        }
+
         renderCards(items, q);
       } catch (e) {
         statusEl.innerHTML = `<span style="color:var(--np-red)">⚠️ 검색 오류: ${e.message}</span>`;
+        bulkBtn.style.display = 'none';
       }
     }
 
@@ -1082,13 +1185,23 @@
         return;
       }
 
-      items.forEach(d => {
+      items.forEach((d, idx) => {
         let content = {};
         try { content = JSON.parse(d.content_json); } catch(e) {}
 
         const isSae = (d.doc_type || '').toUpperCase() === 'SAE' || (content.doc_type || '').toUpperCase() === 'SAE';
         const specs = content.specs || {};
+        const cardId = `card_item_${idx}`;
         
+        // 간략 요약 스니펫 생성 (원인 또는 증상 또는 디스플레이 메시지 1줄)
+        let snippet = '';
+        if (isSae) {
+          snippet = content.displayMsg || (content.fmiList && content.fmiList[0] ? `FMI ${content.fmiList[0].fmi}: ${content.fmiList[0].symptom || content.fmiList[0].causes || ''}` : '-');
+        } else {
+          snippet = content.event || content.symptom || content.causes || content.actions || '-';
+        }
+        snippet = snippet.split('|')[0].trim();
+
         let specTableHtml = '';
         if (specs.options && specs.options.length > 0) {
           specTableHtml += `
@@ -1153,45 +1266,60 @@
           const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
           return parts.map(p => {
             let formatted = highlight(p, keyword);
-            formatted = formatted.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="javascript:void(0)" onclick="quickSearch(\'$1\')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">$1</a>');
+            formatted = formatted.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="javascript:void(0)" onclick="event.stopPropagation(); quickSearch(\'$1\')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">$1</a>');
             return `<div class="bullet-item"><span class="bullet-icon">🔧</span><span>${formatted}</span></div>`;
           }).join('');
         };
 
         const renderSaeActions = (rawActions, defaultDtc) => {
           if (!rawActions || rawActions === '없음' || rawActions === '-') {
-            return `<a href="javascript:void(0)" onclick="quickSearch('${defaultDtc}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
+            return `<a href="javascript:void(0)" onclick="event.stopPropagation(); quickSearch('${defaultDtc}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
           }
           const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
           return parts.map(p => {
             let itemHtml = highlight(p, keyword);
-            itemHtml = itemHtml.replace(/(\b\d{3}\s*(?:PID|PPID|SID|PSID)\d+\b|\bMID\d+\b|\bSE\d+\b)/gi, '<a href="javascript:void(0)" onclick="quickSearch(\'$1\')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">$1</a>');
+            itemHtml = itemHtml.replace(/(\b\d{3}\s*(?:PID|PPID|SID|PSID)\d+\b|\bMID\d+\b|\bSE\d+\b)/gi, '<a href="javascript:void(0)" onclick="event.stopPropagation(); quickSearch(\'$1\')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">$1</a>');
             return `<div class="bullet-item"><span class="bullet-icon">🔧</span><span>${itemHtml}</span></div>`;
           }).join('');
         };
 
         const div = document.createElement('div');
         div.className = 'np-card';
+        div.id = cardId;
 
-        const cardTopHtml = `
-          <div class="np-card-top">
-            <div class="np-card-header-left">
-              <span class="${isSae ? 'badge-sae-np' : 'badge-dtc-np'}">${d.dtc}</span>
-              <span class="badge-model-np">🚜 ${d.model_name || 'Volvo'}</span>
-              <span class="np-comp-title">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</span>
+        // 요약 헤더 HTML (간단하게 1~2줄 표시)
+        const summaryHeaderHtml = `
+          <div class="np-card-summary" onclick="toggleCard('${cardId}')">
+            <div class="np-summary-row1">
+              <div class="np-card-header-left">
+                <span class="${isSae ? 'badge-sae-np' : 'badge-dtc-np'}">${d.dtc}</span>
+                <span class="badge-model-np">🚜 ${d.model_name || 'Volvo'}</span>
+              </div>
+              <div class="expand-indicator">
+                <span>펼치기</span>
+                <span class="expand-arrow">▾</span>
+              </div>
             </div>
-            <div class="np-card-actions">
-              <button class="np-action-btn" onclick="copyCard('${d.dtc}', '${d.model_name}')">📋 복사</button>
-              <button class="np-action-btn np-action-edit" onclick="openEditModal('${d.unique_id}')">✏️ 수정</button>
-              <button class="np-action-btn np-action-delete" onclick="deleteRecord('${d.unique_id}', '${d.dtc}', '${d.model_name}')">🗑️ 삭제</button>
+            <div class="np-summary-row2">
+              <div class="np-comp-title">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</div>
+              ${snippet && snippet !== '-' ? `<div class="np-summary-snippet">🔍 ${highlight(snippet, keyword)}</div>` : ''}
             </div>
           </div>
         `;
 
+        // 액션 버튼 바
+        const actionsBarHtml = `
+          <div class="np-card-actions-bar" onclick="event.stopPropagation()">
+            <button class="np-action-btn" onclick="copyCard('${d.dtc}', '${d.model_name}')">📋 복사</button>
+            <button class="np-action-btn np-action-edit" onclick="openEditModal('${d.unique_id}')">✏️ 수정</button>
+            <button class="np-action-btn np-action-delete" onclick="deleteRecord('${d.unique_id}', '${d.dtc}', '${d.model_name}')">🗑️ 삭제</button>
+          </div>
+        `;
+
+        let detailBodyHtml = '';
+
         if (currentViewMode === 'table') {
-          // ==========================================
-          // 📄 [모드 2] 원래 처음 모드 (OEM 원본 표 모드)
-          // ==========================================
+          // 📄 원본 OEM 표 모드
           if (isSae) {
             const fmiList = content.fmiList || [];
             let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:bold; margin: 12px 0 6px;">고장 모드 진단</h3>';
@@ -1224,9 +1352,9 @@
               `;
             });
 
-            div.innerHTML = `
-              ${cardTopHtml}
+            detailBodyHtml = `
               <div class="oem-sheet">
+                ${actionsBarHtml}
                 <div class="oem-title">${highlight(d.dtc, keyword)}</div>
                 ${specTableHtml}
                 <table class="oem-tbl" style="margin-bottom:14px;">
@@ -1241,9 +1369,9 @@
               </div>
             `;
           } else {
-            div.innerHTML = `
-              ${cardTopHtml}
+            detailBodyHtml = `
               <div class="oem-sheet">
+                ${actionsBarHtml}
                 <div class="oem-title">${highlight(d.dtc, keyword)}</div>
                 ${specTableHtml}
                 <table class="oem-tbl" style="margin-bottom:14px;">
@@ -1264,9 +1392,7 @@
             `;
           }
         } else {
-          // ==========================================
-          // 📱 [모드 1 & 3] 네이버페이 스마트 카드 뷰
-          // ==========================================
+          // 📱 네이버페이 스마트 카드 모드
           if (isSae) {
             const fmiList = content.fmiList || [];
             let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:800; margin: 14px 0 8px; color:var(--text);">⚡ 고장 모드 진단 (FMI)</h3>';
@@ -1297,97 +1423,100 @@
               `;
             });
 
-            div.innerHTML = `
-              ${cardTopHtml}
-              <div class="np-card-content">
-                <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
-                
-                <div class="np-info-section">
-                  <div class="np-info-tile">
-                    <div class="np-tile-label">📟 컨트롤 유니트 / 파라미터</div>
-                    <div class="np-tile-body">
-                      <b>${highlight(content.ecu || d.ecu, keyword)}</b> 
-                      ${content.paramName ? ` / <b>${highlight(content.paramName, keyword)}</b>` : ''}
-                    </div>
+            detailBodyHtml = `
+              ${actionsBarHtml}
+              <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
+              
+              <div class="np-info-section">
+                <div class="np-info-tile">
+                  <div class="np-tile-label">📟 컨트롤 유니트 / 파라미터</div>
+                  <div class="np-tile-body">
+                    <b>${highlight(content.ecu || d.ecu, keyword)}</b> 
+                    ${content.paramName ? ` / <b>${highlight(content.paramName, keyword)}</b>` : ''}
                   </div>
-
-                  ${content.displayMsg ? `
-                    <div class="np-info-tile warn-tile">
-                      <div class="np-tile-label">🖥️ 장비 디스플레이 메시지</div>
-                      <div class="np-tile-body">${highlight(content.displayMsg, keyword)}</div>
-                    </div>
-                  ` : ''}
-
-                  ${content.standard ? `
-                    <div class="np-info-tile">
-                      <div class="np-tile-label">📐 기준</div>
-                      <div class="np-tile-body"><a href="javascript:void(0)" onclick="quickSearch('${content.standard}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${highlight(content.standard, keyword)}</a></div>
-                    </div>
-                  ` : ''}
                 </div>
 
-                ${specTableHtml}
-                ${fmiBlocksHtml}
+                ${content.displayMsg ? `
+                  <div class="np-info-tile warn-tile">
+                    <div class="np-tile-label">🖥️ 장비 디스플레이 메시지</div>
+                    <div class="np-tile-body">${highlight(content.displayMsg, keyword)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.standard ? `
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">📐 기준</div>
+                    <div class="np-tile-body"><a href="javascript:void(0)" onclick="quickSearch('${content.standard}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${highlight(content.standard, keyword)}</a></div>
+                  </div>
+                ` : ''}
               </div>
+
+              ${specTableHtml}
+              ${fmiBlocksHtml}
             `;
           } else {
-            div.innerHTML = `
-              ${cardTopHtml}
-              <div class="np-card-content">
-                <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
+            detailBodyHtml = `
+              ${actionsBarHtml}
+              <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
 
-                <div class="np-info-section">
-                  <div class="np-info-tile">
-                    <div class="np-tile-label">📟 컨트롤 유니트 (ECU)</div>
-                    <div class="np-tile-body"><b>${highlight(content.ecu || d.ecu, keyword)}</b></div>
-                  </div>
-
-                  <div class="np-info-tile">
-                    <div class="np-tile-label">🔍 시스템 / 구성부품 / 고장 유형</div>
-                    <div class="np-tile-body"><b>${highlight(content.compFull || d.comp_name, keyword)}</b></div>
-                  </div>
-
-                  ${content.standard ? `
-                    <div class="np-info-tile">
-                      <div class="np-tile-label">📐 기준</div>
-                      <div class="np-tile-body">${highlight(content.standard, keyword)}</div>
-                    </div>
-                  ` : ''}
-
-                  ${content.event && content.event !== '-' && content.event !== '없음' ? `
-                    <div class="np-info-tile warn-tile">
-                      <div class="np-tile-label">⚠️ 고장 이벤트</div>
-                      <div class="np-tile-body">${renderEvent(content.event)}</div>
-                    </div>
-                  ` : ''}
-
-                  ${content.symptom && content.symptom !== '-' && content.symptom !== '없음' ? `
-                    <div class="np-info-tile danger-tile">
-                      <div class="np-tile-label">🚨 발생 증상</div>
-                      <div class="np-tile-body">${renderBullets(content.symptom)}</div>
-                    </div>
-                  ` : ''}
-
-                  ${content.causes && content.causes !== '-' && content.causes !== '없음' ? `
-                    <div class="np-info-tile">
-                      <div class="np-tile-label">❓ 가능한 이유</div>
-                      <div class="np-tile-body">${renderBullets(content.causes)}</div>
-                    </div>
-                  ` : ''}
-
-                  ${content.actions && content.actions !== '-' && content.actions !== '없음' ? `
-                    <div class="np-info-tile action-tile">
-                      <div class="np-tile-label">🛠️ 조치 및 해결 방법</div>
-                      <div class="np-tile-body">${renderActions(content.actions, d.dtc)}</div>
-                    </div>
-                  ` : ''}
+              <div class="np-info-section">
+                <div class="np-info-tile">
+                  <div class="np-tile-label">📟 컨트롤 유니트 (ECU)</div>
+                  <div class="np-tile-body"><b>${highlight(content.ecu || d.ecu, keyword)}</b></div>
                 </div>
 
-                ${specTableHtml}
+                <div class="np-info-tile">
+                  <div class="np-tile-label">🔍 시스템 / 구성부품 / 고장 유형</div>
+                  <div class="np-tile-body"><b>${highlight(content.compFull || d.comp_name, keyword)}</b></div>
+                </div>
+
+                ${content.standard ? `
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">📐 기준</div>
+                    <div class="np-tile-body">${highlight(content.standard, keyword)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.event && content.event !== '-' && content.event !== '없음' ? `
+                  <div class="np-info-tile warn-tile">
+                    <div class="np-tile-label">⚠️ 고장 이벤트</div>
+                    <div class="np-tile-body">${renderEvent(content.event)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.symptom && content.symptom !== '-' && content.symptom !== '없음' ? `
+                  <div class="np-info-tile danger-tile">
+                    <div class="np-tile-label">🚨 발생 증상</div>
+                    <div class="np-tile-body">${renderBullets(content.symptom)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.causes && content.causes !== '-' && content.causes !== '없음' ? `
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">❓ 가능한 이유</div>
+                    <div class="np-tile-body">${renderBullets(content.causes)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.actions && content.actions !== '-' && content.actions !== '없음' ? `
+                  <div class="np-info-tile action-tile">
+                    <div class="np-tile-label">🛠️ 조치 및 해결 방법</div>
+                    <div class="np-tile-body">${renderActions(content.actions, d.dtc)}</div>
+                  </div>
+                ` : ''}
               </div>
+
+              ${specTableHtml}
             `;
           }
         }
+
+        div.innerHTML = `
+          ${summaryHeaderHtml}
+          <div class="np-card-detail">
+            ${detailBodyHtml}
+          </div>
+        `;
 
         box.appendChild(div);
       });
