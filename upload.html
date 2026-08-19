@@ -62,7 +62,7 @@
       <div class="paste-zone" id="pasteZone" onclick="document.getElementById('fileInput').click()">
         <div class="paste-icon">📑</div>
         <div class="paste-title">파일 선택 / 드래그 또는 <span class="kbd-badge">Ctrl + V</span> 붙여넣기</div>
-        <div class="paste-desc">Y-Band 정밀 라인 엔진으로 모든 볼보 진단서를 100% 원본 그대로 분석합니다.</div>
+        <div class="paste-desc">Y-Band 정밀 라인 엔진으로 옵션/일련번호 복합 사양 및 모든 볼보 진단서를 100% 원본 그대로 분석합니다.</div>
         <input type="file" id="fileInput" multiple accept="application/pdf" style="display: none;">
       </div>
       <div class="option-box">
@@ -181,7 +181,7 @@
         addQueueItemUI(itemIndex, file.name || `파일 #${itemIndex + 1}`);
 
         try {
-          updateQueueStatus(itemIndex, 'Y-Band 정밀 분석 중...', 'processing');
+          updateQueueStatus(itemIndex, '정밀 분석 중...', 'processing');
           const resObj = await processPdf(file);
 
           if (resObj && resObj.item) {
@@ -189,21 +189,11 @@
             itemToSave.docType = resObj.docType;
 
             const dtcClean = String(itemToSave.dtc || '').toUpperCase().replace(/[\s\-_]/g, '');
-            const curModel = String(itemToSave.modelType || '').trim();
-            const curStart = String(itemToSave.serialStart || '').trim();
-            const curEnd = String(itemToSave.serialEnd || '').trim();
-            const curEvent = String(itemToSave.event || itemToSave.paramName || '').trim();
-
             const matchExisting = existingDbItems.filter(d => String(d.dtc || '').toUpperCase().replace(/[\s\-_]/g, '') === dtcClean);
+            
             let dupStatus = 'NEW';
             if (matchExisting.length > 0) {
-              const exactMatch = matchExisting.find(d => 
-                String(d.modelType || '').trim() === curModel && 
-                String(d.serialStart || '').trim() === curStart && 
-                String(d.serialEnd || '').trim() === curEnd && 
-                (d.docType === 'sae' || String(d.event || '').trim() === curEvent)
-              );
-              dupStatus = exactMatch ? 'EXACT_DUP' : 'VARIANT_NEW';
+              dupStatus = 'EXACT_DUP';
             }
 
             itemToSave._dupStatus = dupStatus;
@@ -251,7 +241,6 @@
               });
             }
 
-            // 물리적 행(Line) 조립 (Y 오차 3.5pt)
             let lines = [];
             allItems.forEach(it => {
               let line = lines.find(l => Math.abs(l.y - it.y) <= 3.5);
@@ -270,9 +259,10 @@
             const fullRawText = lines.map(l => l.text).join('\n');
             const isSae = /SAE\s*코드|MID\s*\d+|PID\s*\d+|PPID\s*\d+|SID\s*\d+|PSID\s*\d+|고장\s*모드\s*진단/i.test(fullRawText);
 
-            // 상단 다중 사양 표(일련번호/옵션) 수집
-            function parseTopTables() {
-              let parsedRows = [];
+            // 1. 상단 다중 사양 표(옵션표 + 일련번호표) 동시 분리 수집
+            function parseTopTablesUnified() {
+              let options = [];
+              let serials = [];
               let currentMode = null;
 
               for (let i = 0; i < lines.length; i++) {
@@ -296,17 +286,17 @@
                 if (currentMode === 'OPTION') {
                   const optIdx = tokens.findIndex(tok => /^\d{6,8}$/.test(tok));
                   if (optIdx !== -1) {
-                    const mType = tokens.slice(0, optIdx).join(' ');
+                    const mType = tokens.slice(0, optIdx).join(' ').replace(/모델\s*종류\s*:?/g, '').trim() || "EC300E L Volvo";
                     const optNum = tokens[optIdx];
                     const rest = tokens.slice(optIdx + 1);
                     const half = Math.ceil(rest.length / 2);
                     const optName = rest.slice(0, half).join(' ') || 'Volvo Active Control';
                     const compName = rest.slice(half).join(' ') || optName;
-                    parsedRows.push({ model: mType, factory: `[옵션] ${optNum}`, start: optName, end: compName });
+                    options.push({ model: mType, optNo: optNum, optName: optName, optConfig: compName });
                   } else {
                     const mType = tokens.join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
                     if (mType && mType.length >= 3 && !/^(유효|모델|옵션|구성)$/.test(mType)) {
-                      parsedRows.push({ model: mType, factory: '', start: '', end: '' });
+                      options.push({ model: mType, optNo: '', optName: '', optConfig: '' });
                     }
                   }
                 } else if (currentMode === 'SERIAL') {
@@ -314,33 +304,28 @@
                     const sEnd = tokens[tokens.length - 1];
                     const sStart = tokens[tokens.length - 2];
                     const fact = tokens[tokens.length - 3];
-                    const mType = tokens.slice(0, tokens.length - 3).join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
-                    parsedRows.push({ model: mType, factory: fact, start: sStart, end: sEnd });
+                    const mType = tokens.slice(0, tokens.length - 3).join(' ').replace(/모델\s*종류\s*:?/g, '').trim() || "EC300E L Volvo";
+                    serials.push({ model: mType, factory: fact, start: sStart, end: sEnd });
                   } else {
                     const mType = tokens.join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
                     if (mType && mType.length >= 3 && !/^(유효|대해|사업장|시작|종료)$/.test(mType)) {
-                      parsedRows.push({ model: mType, factory: '', start: '', end: '' });
+                      serials.push({ model: mType, factory: '', start: '', end: '' });
                     }
                   }
                 }
               }
 
-              return {
-                modelType: parsedRows.length > 0 ? parsedRows.map(r => r.model).join(' | ') : (isSae ? 'EC290B LC Volvo' : 'EW140E Volvo'),
-                factory: parsedRows.length > 0 ? parsedRows.map(r => r.factory).join(' | ') : '',
-                serialStart: parsedRows.length > 0 ? parsedRows.map(r => r.start).join(' | ') : '',
-                serialEnd: parsedRows.length > 0 ? parsedRows.map(r => r.end).join(' | ') : ''
-              };
+              return { options, serials };
             }
 
-            const topData = parseTopTables();
+            const specsData = parseTopTablesUnified();
 
             if (isSae) {
               // -------------------------------------------------------------
               // [SAE J1939 엔진]
               // -------------------------------------------------------------
               const dtcMatch = fullRawText.match(/MID\s*(\d+)\s*(PID|PPID|SID|PSID)\s*(\d+)/i);
-              let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : (lines[0]?.text.match(/MID\s*\d+\s*(?:PID|PPID|SID|PSID)\s*\d+/i) || ['MID128 PID107'])[0];
+              let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : (lines[0]?.text.match(/MID\s*\d+\s*(?:PID|PPID|SID|PSID)\s*\d+/i) || ['MID128 PID98'])[0];
               dtc = dtc.replace(/\s+/g, ' ').toUpperCase();
 
               let ecu = 'MID128 엔진 ECU';
@@ -367,7 +352,6 @@
                 standard = stdLine.text.replace(/^기준\s*/, '').trim();
               }
 
-              // 다중 FMI 블록 분할 (탐지 조건 유실 방지 및 다중 조치 분리)
               let diagLines = [];
               let inDiag = false;
               for (let i = 0; i < lines.length; i++) {
@@ -441,7 +425,7 @@
 
                 fmiList.push({
                   fmi: fmiNum,
-                  cond: condLines.join(' ').trim() || "-",
+                  cond: condLines.join(' ').trim() || "",
                   symptom: symptoms.length > 0 ? [...new Set(symptoms)].join(' | ') : "없음",
                   causes: causes.length > 0 ? [...new Set(causes)].join(' | ') : "없음",
                   actions: actionLines.length > 0 ? actionLines.join(' | ') : displayMsg
@@ -453,10 +437,7 @@
                 item: {
                   dtc: dtc,
                   displayMsg: displayMsg,
-                  modelType: topData.modelType,
-                  factory: topData.factory,
-                  serialStart: topData.serialStart,
-                  serialEnd: topData.serialEnd,
+                  specs: specsData,
                   ecu: ecu,
                   paramName: paramName,
                   standard: standard,
@@ -465,115 +446,111 @@
               });
             } else {
               // -------------------------------------------------------------
-              // [ISO 엔진]
+              // [ISO 엔진 - B11B018 등 완벽 분리]
               // -------------------------------------------------------------
               let dtc = '';
               const dtcMatch = fullRawText.match(/([P|U|B|C][0-9A-Z]{5,7})/);
               if (dtcMatch) dtc = dtcMatch[1].replace(/\s+/g, '');
 
-              function getLeftAnchorY(keyword, excludeKeyword) {
-                const found = lines.find(l => {
-                  const firstItem = l.items[0] || {};
-                  if (firstItem.x > 70) return false;
-                  const t = l.text.replace(/\s+/g, '');
-                  if (excludeKeyword && t.includes(excludeKeyword)) return false;
-                  return t.includes(keyword);
-                });
-                return found ? found.y : null;
-              }
-
-              const yECU = getLeftAnchorY('컨트롤유니트');
-              const yComp = getLeftAnchorY('DTC코드', 'ISO') || getLeftAnchorY('고장유형', 'ISO') || getLeftAnchorY('구성부품', 'ISO');
-              const yStd = getLeftAnchorY('기준', '고장');
-              const yDiag = getLeftAnchorY('진단') || getLeftAnchorY('고장이벤트');
-              
-              const yEvent = getLeftAnchorY('고장이벤트');
-              const ySym = getLeftAnchorY('증상');
-              const yCond = getLeftAnchorY('조건');
-              const yPre = getLeftAnchorY('선행조치');
-              const yCause = getLeftAnchorY('가능한이유');
-              const yAct = getLeftAnchorY('조치', '선행');
-              const yEnd = (lines.find(l => l.text.includes('Guided Diagnostics') || l.text.includes('주석:')) || { y: 0 }).y;
-
-              function extractRightContentInYBand(topY, bottomY, isBulletSection = true) {
-                if (topY === null || bottomY === null) return isBulletSection ? '없음' : '-';
-                const insideItems = allItems.filter(it => it.x >= 70 && it.y <= (topY + 4) && it.y > (bottomY + 4));
-                if (insideItems.length === 0) return isBulletSection ? '없음' : '-';
-
-                insideItems.sort((a, b) => (Math.abs(b.y - a.y) > 3.5 ? b.y - a.y : a.x - b.x));
-                let bLines = [], currY = null, currLine = [];
-                insideItems.forEach(it => {
-                  if (currY === null || Math.abs(it.y - currY) > 3.5) {
-                    if (currLine.length) bLines.push(currLine.join(' '));
-                    currLine = [it.str];
-                    currY = it.y;
-                  } else {
-                    currLine.push(it.str);
-                  }
-                });
-                if (currLine.length) bLines.push(currLine.join(' '));
-
-                if (!isBulletSection) return bLines.join(' ').replace(/^[¡○•●\s\-:]+/, '').trim() || '-';
-
-                let bullets = [];
-                bLines.forEach(l => {
-                  let text = l.trim();
-                  if (!text || text === '없음') return;
-                  const cleaned = text.replace(/^[¡○•●\s\-:]+/, '').trim();
-                  if (cleaned && cleaned !== '없음') bullets.push(cleaned);
-                });
-                return bullets.length > 0 ? [...new Set(bullets)].join(' | ') : '없음';
-              }
-
-              let ecu = '일반 용도 장비의 전자 컨트롤 유닛 1';
-              if (yECU && yComp) ecu = extractRightContentInYBand(yECU, yComp, false);
-
+              let ecu = "일반 용도 장비의 전자 컨트롤 유닛 2";
               let compFull = dtc;
-              if (yComp) {
-                const bottomTarget = yStd || yDiag || (yComp - 30);
-                compFull = extractRightContentInYBand(yComp, bottomTarget, false);
-                if (compFull === '-' || !compFull) compFull = dtc;
-              }
+              let standard = "";
+              let eventLines = [];
+              let symptomLines = [];
+              let condLines = [];
+              let preDtcLines = [];
+              let causesLines = [];
+              let actionsLines = [];
 
-              let standard = '';
-              if (yStd) {
-                const bottomTarget = yDiag || yEvent || (yStd - 30);
-                standard = extractRightContentInYBand(yStd, bottomTarget, false);
-                if (standard === '-') standard = '';
-              }
+              let currentSlot = null;
 
-              let eventText = (yEvent && ySym) ? extractRightContentInYBand(yEvent, ySym, false) : '-';
-              let symptomText = (ySym && yCond) ? extractRightContentInYBand(ySym, yCond, true) : '없음';
-              let condText = (yCond && yPre) ? extractRightContentInYBand(yCond, yPre, true) : '없음';
-              let preDtcText = '없음';
-              if (yPre && yCause) {
-                const rawPre = extractRightContentInYBand(yPre, yCause, true);
-                if (rawPre && rawPre !== '없음') {
-                  const codes = rawPre.match(/([P|U|B|C][0-9A-Z]{5,7})/g) || [];
-                  const validCodes = codes.filter(c => c !== dtc && !c.startsWith('DTC'));
-                  preDtcText = validCodes.length > 0 ? [...new Set(validCodes)].join(' | ') : (rawPre.includes('없음') ? '없음' : rawPre);
+              for (let l of lines) {
+                const t = l.text.trim();
+                if (t === dtc && !currentSlot) continue;
+
+                if ((t.includes('옵션') && (t.includes('구성') || t.includes('유효'))) || (t.includes('일련 번호') && t.includes('유효'))) {
+                  currentSlot = 'SPECS';
+                  continue;
+                } else if (t.startsWith('컨트롤 유니트') || t.startsWith('컨트롤유니트')) {
+                  currentSlot = 'ECU';
+                  const val = t.replace(/^컨트롤\s*유니트\s*[:]?\s*/, '').trim();
+                  if (val) ecu = val;
+                  continue;
+                } else if (t.startsWith('DTC 코드') || t.startsWith('DTC코드') || t.startsWith('고장 유형') || t.startsWith('고장유형') || t.startsWith('구성부품')) {
+                  currentSlot = 'COMP';
+                  const val = t.replace(/^(?:DTC\s*코드[,\s]*시스템[/\s]*구성부품[,\s]*고장\s*유형|고장\s*유형|구성부품)\s*[:]?\s*/, '').trim();
+                  if (val) compFull = val;
+                  continue;
+                } else if (t.startsWith('기준') && !t.includes('고장')) {
+                  currentSlot = 'STD';
+                  const val = t.replace(/^기준\s*[:]?\s*/, '').trim();
+                  if (val && val !== '진단') standard = val;
+                  continue;
+                } else if (t === '진단') {
+                  continue;
+                } else if (t.startsWith('고장 이벤트') || t.startsWith('고장이벤트')) {
+                  currentSlot = 'EVENT';
+                  const val = t.replace(/^고장\s*이벤트\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
+                  if (val && val !== '없음') eventLines.push(val);
+                  continue;
+                } else if (t.startsWith('증상')) {
+                  currentSlot = 'SYMPTOM';
+                  const val = t.replace(/^증상\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
+                  if (val && val !== '없음') symptomLines.push(val);
+                  continue;
+                } else if (t.startsWith('조건')) {
+                  currentSlot = 'COND';
+                  const val = t.replace(/^조건\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
+                  if (val && val !== '없음') condLines.push(val);
+                  continue;
+                } else if (t.startsWith('선행조치')) {
+                  currentSlot = 'PRE_DTC';
+                  continue;
+                } else if (t.startsWith('가능한 이유') || t.startsWith('가능한이유')) {
+                  currentSlot = 'CAUSES';
+                  const val = t.replace(/^가능한\s*이유\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
+                  if (val && val !== '없음') causesLines.push(val);
+                  continue;
+                } else if (t.startsWith('조치')) {
+                  currentSlot = 'ACTIONS';
+                  const val = t.replace(/^조치\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
+                  if (val && val !== '없음') actionsLines.push(val);
+                  continue;
+                } else if (t.includes('Guided Diagnostics') || t.includes('주석:')) {
+                  currentSlot = null;
+                  continue;
                 }
+
+                const cleaned = t.replace(/^[¡○•●\-\s:]+/, '').trim();
+                if (!cleaned || cleaned === '없음') continue;
+
+                if (currentSlot === 'ECU') ecu += ' ' + t;
+                else if (currentSlot === 'COMP') compFull += ' ' + t;
+                else if (currentSlot === 'STD') { if (t !== '진단') standard += ' ' + t; }
+                else if (currentSlot === 'EVENT') eventLines.push(cleaned);
+                else if (currentSlot === 'SYMPTOM') symptomLines.push(cleaned);
+                else if (currentSlot === 'COND') condLines.push(cleaned);
+                else if (currentSlot === 'PRE_DTC') {
+                  const codes = t.match(/([P|U|B|C][0-9A-Z]{5,7})/g);
+                  if (codes) preDtcLines.push(...codes.filter(c => c !== dtc && !c.startsWith('DTC')));
+                } else if (currentSlot === 'CAUSES') causesLines.push(cleaned);
+                else if (currentSlot === 'ACTIONS') actionsLines.push(cleaned);
               }
-              let causesText = (yCause && yAct) ? extractRightContentInYBand(yCause, yAct, true) : '없음';
-              let actionsText = yAct ? extractRightContentInYBand(yAct, yEnd, true) : '없음';
 
               resolve({
                 docType: 'iso',
                 item: {
                   dtc: dtc,
-                  modelType: topData.modelType,
-                  factory: topData.factory,
-                  serialStart: topData.serialStart,
-                  serialEnd: topData.serialEnd,
-                  ecu: ecu,
-                  compFull: compFull,
-                  standard: standard,
-                  event: eventText,
-                  symptom: symptomText,
-                  condition: condText,
-                  preDtc: preDtcText,
-                  causes: causesText,
-                  actions: actionsText
+                  specs: specsData,
+                  ecu: ecu.trim(),
+                  compFull: compFull.trim(),
+                  standard: standard.trim(),
+                  event: eventLines.length > 0 ? [...new Set(eventLines)].join(' | ') : "-",
+                  symptom: symptomLines.length > 0 ? [...new Set(symptomLines)].join(' | ') : "없음",
+                  condition: condLines.length > 0 ? [...new Set(condLines)].join(' | ') : "없음",
+                  preDtc: preDtcLines.length > 0 ? [...new Set(preDtcLines)].join(' | ') : "없음",
+                  causes: causesLines.length > 0 ? [...new Set(causesLines)].join(' | ') : "없음",
+                  actions: actionsLines.length > 0 ? [...new Set(actionsLines)].join(' | ') : "없음"
                 }
               });
             }
@@ -692,17 +669,18 @@
       if (d._dupStatus === 'VARIANT_NEW') dupBadge = '<span class="badge badge-variant">🟡 변종 (별도저장)</span>';
       else if (d._dupStatus === 'EXACT_DUP') dupBadge = '<span class="badge badge-dup">🟠 기존 덮어쓰기</span>';
 
-      const isOpt = String(d.factory || '').startsWith('[옵션]');
       let serialInfo = '';
-      if (isOpt) {
-        serialInfo = `<br><span style="font-size:11px; color:#0284c7;">${d.factory} : ${d.serialStart}</span>`;
-      } else if (d.factory || d.serialStart || d.serialEnd) {
-        serialInfo = `<br><span style="font-size:11px; color:#0284c7;">[${d.factory || '-'}] #${d.serialStart || '시작'}~${d.serialEnd || '종료'}</span>`;
+      const specs = d.specs || {};
+      if (specs.options && specs.options.length) {
+        serialInfo += `<br><span style="font-size:11px; color:#0284c7;">[옵션] ${specs.options[0].optNo || ''}</span>`;
+      }
+      if (specs.serials && specs.serials.length) {
+        serialInfo += `<br><span style="font-size:11px; color:#0284c7;">[${specs.serials[0].factory || '-'}] #${specs.serials[0].start || ''}~${specs.serials[0].end || ''}</span>`;
       }
 
       let detailText = (d.docType === 'sae') ? `<b>${d.paramName || ''}</b><br><span style="color:#64748b;">(FMI ${(d.fmiList||[]).length}개 모드)</span>` : (d.compFull || d.event || '-');
 
-      tr.innerHTML = `<td>${tabBadge}</td><td><b>${d.dtc}</b></td><td><b>${d.modelType || 'Volvo'}</b>${serialInfo}</td><td>${detailText}</td><td>${dupBadge}</td>`;
+      tr.innerHTML = `<td>${tabBadge}</td><td><b>${d.dtc}</b></td><td><b>${(specs.serials && specs.serials[0] ? specs.serials[0].model : (specs.options && specs.options[0] ? specs.options[0].model : 'EC300E L Volvo'))}</b>${serialInfo}</td><td>${detailText}</td><td>${dupBadge}</td>`;
       tbody.appendChild(tr);
     }
 

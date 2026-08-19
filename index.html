@@ -63,7 +63,7 @@
 
   <div class="container">
     <div class="search-box">
-      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 검색 (예: MID128 PID107, B100512, 필터)..." oninput="handleSearch()">
+      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 검색 (예: B11B018, MID128 PID98, 붐 업)..." oninput="handleSearch()">
       <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
     </div>
 
@@ -167,46 +167,45 @@
         try { content = JSON.parse(d.content_json); } catch(e) { content = {}; }
 
         const isSae = (d.doc_type || '').toUpperCase() === 'SAE' || (content.doc_type || '').toUpperCase() === 'SAE';
+        const specs = content.specs || {};
         
-        // 사양 표 생성
-        const models = (content.modelType || (isSae ? 'EC290B LC Volvo' : 'EW140E Volvo')).split(' | ');
-        const factories = (content.factory || '').split(' | ');
-        const starts = (content.serialStart || '').split(' | ');
-        const ends = (content.serialEnd || '').split(' | ');
-
-        const isOpt = factories.some(f => f.startsWith('[옵션]'));
+        // 사양 표 렌더링 (옵션표 + 일련번호표 완벽 분리 지원)
         let specTableHtml = '';
-
-        if (isOpt) {
-          specTableHtml = `
+        
+        // 1. 옵션/구성에 대해 유효 표
+        if (specs.options && specs.options.length > 0) {
+          specTableHtml += `
             <table class="oem-tbl">
               <tr><th colspan="4">옵션/구성에 대해 유효</th></tr>
               <tr style="background:#f8fafc; font-weight:bold;">
                 <td style="width:28%;">모델 종류:</td><td style="width:24%;">옵션 번호</td><td style="width:24%;">옵션</td><td style="width:24%;">구성</td>
               </tr>
-              ${models.map((m, i) => `
+              ${specs.options.map(o => `
                 <tr>
-                  <td>${m || 'EW140E Volvo'}</td>
-                  <td>${(factories[i] || '').replace('[옵션]', '').trim()}</td>
-                  <td>${starts[i] || ''}</td>
-                  <td>${ends[i] || ''}</td>
+                  <td>${o.model || 'EC300E L Volvo'}</td>
+                  <td>${o.optNo || ''}</td>
+                  <td>${o.optName || ''}</td>
+                  <td>${o.optConfig || ''}</td>
                 </tr>
               `).join('')}
             </table>
           `;
-        } else {
-          specTableHtml = `
+        }
+
+        // 2. 일련 번호에 대해 유효 표
+        if (specs.serials && specs.serials.length > 0) {
+          specTableHtml += `
             <table class="oem-tbl">
               <tr><th colspan="4">일련 번호에 대해 유효</th></tr>
               <tr style="background:#f8fafc; font-weight:bold;">
                 <td style="width:28%;">모델 종류:</td><td style="width:24%;">생산 사업장</td><td style="width:24%;">일련 번호 시작</td><td style="width:24%;">일련 번호 종료</td>
               </tr>
-              ${models.map((m, i) => `
+              ${specs.serials.map(s => `
                 <tr>
-                  <td>${m || (isSae ? 'EC290B LC Volvo' : 'EW140E Volvo')}</td>
-                  <td>${factories[i] || ''}</td>
-                  <td>${starts[i] || ''}</td>
-                  <td>${ends[i] || ''}</td>
+                  <td>${s.model || (isSae ? 'EC290B LC Volvo' : 'EC300E L Volvo')}</td>
+                  <td>${s.factory || ''}</td>
+                  <td>${s.start || ''}</td>
+                  <td>${s.end || ''}</td>
                 </tr>
               `).join('')}
             </table>
@@ -221,7 +220,27 @@
           }).join('');
         };
 
+        const renderEvent = (rawStr) => {
+          if (!rawStr || rawStr === '없음' || rawStr === '-') return '-';
+          if (String(rawStr).includes('|')) {
+            return renderBullets(rawStr);
+          }
+          return highlight(rawStr, keyword);
+        };
+
         const renderActions = (rawActions, defaultDtc) => {
+          if (!rawActions || rawActions === '없음' || rawActions === '-') {
+            return '<div class="bullet-item"><span class="bullet-icon">○</span><span>없음</span></div>';
+          }
+          const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
+          return parts.map(p => {
+            let formatted = highlight(p, keyword);
+            formatted = formatted.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">$1</a>');
+            return `<div class="bullet-item"><span class="bullet-icon">○</span><span>${formatted}</span></div>`;
+          }).join('');
+        };
+
+        const renderSaeActions = (rawActions, defaultDtc) => {
           if (!rawActions || rawActions === '없음' || rawActions === '-') {
             return `<a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
           }
@@ -230,7 +249,7 @@
             if (/^\d{3}\s*(?:PID|PPID|SID|PSID)\d+/i.test(p) || /^MID\d+/i.test(p) || /^SE\d+/i.test(p) || p.startsWith('128 PID')) {
               return `<div><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(p, keyword)}</a></div>`;
             }
-            return `<div style="margin-bottom:3px;">${highlight(p, keyword)}</div>`;
+            return `<div style="margin-bottom:2px;">${highlight(p, keyword)}</div>`;
           }).join('');
         };
 
@@ -238,7 +257,7 @@
         div.className = 'card';
 
         // -------------------------------------------------------------
-        // [A] SAE J1939 전용 렌더링 (OEM 1:1 완벽 일치 구조)
+        // [A] SAE J1939 전용 렌더링
         // -------------------------------------------------------------
         if (isSae) {
           const fmiList = content.fmiList || [];
@@ -268,7 +287,7 @@
                 </tr>
                 <tr>
                   <th style="vertical-align:top;">조치</th>
-                  <td colspan="2" style="vertical-align:top;">${renderActions(f.actions, d.dtc)}</td>
+                  <td colspan="2" style="vertical-align:top;">${renderSaeActions(f.actions, d.dtc)}</td>
                 </tr>
               </table>
             `;
@@ -319,12 +338,12 @@
                 <tr><th>기준</th><td>${highlight(content.standard || '', keyword)}</td></tr>
               </table>
               <table class="oem-tbl">
-                <tr><th style="width:24%;">고장 이벤트</th><td>${highlight(content.event || '-', keyword)}</td></tr>
+                <tr><th style="width:24%;">고장 이벤트</th><td>${renderEvent(content.event)}</td></tr>
                 <tr><th>증상</th><td>${renderBullets(content.symptom)}</td></tr>
                 <tr><th>조건</th><td>${renderBullets(content.condition)}</td></tr>
                 <tr><th>선행조치 DTC</th><td>${renderBullets(content.preDtc)}</td></tr>
                 <tr><th>가능한 이유</th><td>${renderBullets(content.causes)}</td></tr>
-                <tr><th>조치</th><td>${renderBullets(content.actions)}</td></tr>
+                <tr><th>조치</th><td>${renderActions(content.actions, d.dtc)}</td></tr>
               </table>
             </div>
           `;
