@@ -169,7 +169,7 @@
         const isSae = (d.doc_type || '').toUpperCase() === 'SAE' || (content.doc_type || '').toUpperCase() === 'SAE';
         
         // 사양 표 생성
-        const models = (content.modelType || 'EC300E L Volvo').split(' | ');
+        const models = (content.modelType || (isSae ? 'EC290B LC Volvo' : 'EC300E L Volvo')).split(' | ');
         const factories = (content.factory || '').split(' | ');
         const starts = (content.serialStart || '').split(' | ');
         const ends = (content.serialEnd || '').split(' | ');
@@ -221,6 +221,19 @@
           }).join('');
         };
 
+        const renderActions = (rawActions, defaultDtc) => {
+          if (!rawActions || rawActions === '없음' || rawActions === '-') {
+            return `<a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
+          }
+          const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
+          return parts.map(p => {
+            if (/^\d{3}\s*(?:PID|PPID|SID|PSID)\d+/i.test(p) || /^MID\d+/i.test(p) || /^SE\d+/i.test(p) || p.startsWith('128 PID')) {
+              return `<div><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(p, keyword)}</a></div>`;
+            }
+            return `<div>${highlight(p, keyword)}</div>`;
+          }).join('');
+        };
+
         const div = document.createElement('div');
         div.className = 'card';
 
@@ -250,7 +263,7 @@
                 </tr>
                 <tr>
                   <th>조치</th>
-                  <td colspan="2"><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${f.actions || d.dtc}</a></td>
+                  <td colspan="2">${renderActions(f.actions, d.dtc)}</td>
                 </tr>
               </table>
             `;

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>볼보 DTC/SAE 다중 파일 & 화면 캡처 통합 분석기</title>
+  <title>볼보 DTC/SAE 다중 파일 통합 분석기 (Turso DB)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; }
@@ -54,7 +54,7 @@
 </head>
 <body>
   <div class="app-header">
-    <h1>🛠️ 볼보 DTC/SAE 다중 파일 & 화면 캡처 통합 분석기 (Turso DB)</h1>
+    <h1>🛠️ 볼보 DTC/SAE 다중 파일 통합 분석기 (Turso DB)</h1>
     <a href="index.html" class="btn-home">🔍 진단서 조회 (홈)</a>
   </div>
   <div class="container">
@@ -62,7 +62,7 @@
       <div class="paste-zone" id="pasteZone" onclick="document.getElementById('fileInput').click()">
         <div class="paste-icon">📑</div>
         <div class="paste-title">파일 선택 / 드래그 또는 <span class="kbd-badge">Ctrl + V</span> 붙여넣기</div>
-        <div class="paste-desc">Y-Band 수직 구간 격리 엔진으로 영문/한글, 옵션/일련번호 모든 문서를 100% 원본 그대로 분석합니다.</div>
+        <div class="paste-desc">Y-Band 정밀 라인 엔진으로 영문/한글, 옵션/일련번호 모든 문서를 100% 원본 그대로 분석합니다.</div>
         <input type="file" id="fileInput" multiple accept="application/pdf" style="display: none;">
       </div>
       <div class="option-box">
@@ -104,9 +104,6 @@
       pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
     }
 
-    // =========================================================================
-    // [Turso Edge DB 설정]
-    // =========================================================================
     const TURSO_DB_URL = "https://volvoerror-bongkeun-choi.aws-ap-northeast-1.turso.io";
     const TURSO_ADMIN_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODcwOTA3MDQsImlkIjoiMDFhMDE1M2QtNDAwMS03OWU4LTlmYWUtNWJmZDMyZjcyMGE3Iiwia2lkIjoicEo1RHFMd2V3dHJZLTBXWGNxRTd0cnVRNWxrWDlYOVFJNTYxZl9lSC1YTSIsInJpZCI6IjY1YmYwM2JjLTc1ZmEtNGQ1NC05MzY0LWFhNjYzNjRlNzZjNyJ9.O2P-wN5MFUe6jCbxxxSrvtMZt_MyTyavApqJ-2se7NwSgCbi1byQezjfr6Ba49TWcou0Cg4hBq1xUOg7DAVSBg";
 
@@ -149,7 +146,6 @@
       }
     }
 
-    // 파일 붙여넣기 (Ctrl + V)
     window.addEventListener('paste', (e) => {
       const items = e.clipboardData.items;
       const files = [];
@@ -255,7 +251,7 @@
               });
             }
 
-            // 1. 물리적 행(Line) 조립 (Y 오차 3.5pt)
+            // 물리적 행(Line) 조립 (Y 오차 3.5pt)
             let lines = [];
             allItems.forEach(it => {
               let line = lines.find(l => Math.abs(l.y - it.y) <= 3.5);
@@ -272,12 +268,9 @@
             });
 
             const fullRawText = lines.map(l => l.text).join('\n');
-            const isSae = /SAE\s*코드|MID\s*\d+|PID\s*\d+|PPID\s*\d+|SID\s*\d+|PSID\s*\d+|FMI\s*\d+/i.test(fullRawText);
+            const isSae = /SAE\s*코드|MID\s*\d+|PID\s*\d+|PPID\s*\d+|SID\s*\d+|PSID\s*\d+|고장\s*모드\s*진단/i.test(fullRawText);
 
-            const BULLET_CLEAN_REGEX = /^[¡○•●\u00A1\s\-:]+|[¡○•●\u00A1\s\-:]+$/g;
-            const isBulletStart = (str) => /^[¡○•●\u00A1]/.test(str.trim());
-
-            // 2. 상단 다중 표(옵션표 + 일련번호표) 전수 수집
+            // 상단 다중 사양 표(일련번호/옵션) 수집
             function parseTopTables() {
               let parsedRows = [];
               let currentMode = null;
@@ -334,170 +327,130 @@
 
             const topData = parseTopTables();
 
-            // 3. Y-Band 구간 내 우측 본문(X >= 70) 텍스트 조립 헬퍼
-            function extractRightContentInYBand(topY, bottomY, isBulletSection = true) {
-              const insideItems = allItems.filter(it => it.x >= 70 && it.y <= (topY + 4) && it.y > (bottomY + 4));
-              if (insideItems.length === 0) return isBulletSection ? '없음' : '-';
-
-              insideItems.sort((a, b) => (Math.abs(b.y - a.y) > 3.5 ? b.y - a.y : a.x - b.x));
-
-              let bLines = [], currY = null, currLine = [];
-              insideItems.forEach(it => {
-                if (currY === null || Math.abs(it.y - currY) > 3.5) {
-                  if (currLine.length) bLines.push(currLine.join(' '));
-                  currLine = [it.str];
-                  currY = it.y;
-                } else {
-                  currLine.push(it.str);
-                }
-              });
-              if (currLine.length) bLines.push(currLine.join(' '));
-
-              if (!isBulletSection) {
-                const combined = bLines.join(' ').replace(BULLET_CLEAN_REGEX, '').trim();
-                return combined || '-';
-              }
-
-              let bullets = [];
-              bLines.forEach(l => {
-                let text = l.trim();
-                if (!text || text === '없음' || text === '¡' || text === '○') return;
-
-                const isBullet = isBulletStart(text);
-                const cleaned = text.replace(BULLET_CLEAN_REGEX, '').trim();
-                if (!cleaned || cleaned === '없음') return;
-
-                if (isBullet || bullets.length === 0) {
-                  bullets.push(cleaned);
-                } else {
-                  bullets[bullets.length - 1] += ' ' + cleaned;
-                }
-              });
-
-              return bullets.length > 0 ? Array.from(new Set(bullets)).join(' | ') : '없음';
-            }
-
             if (isSae) {
-              // --- SAE J1939 파싱 ---
-              const mid = (fullRawText.match(/MID\s*(\d+)/i) || ['', '128'])[1];
-              const pidMatch = fullRawText.match(/(PID|PPID|SID|PSID)\s*(\d+)/i) || ['', 'PID', '100'];
-              const pidType = pidMatch[1], pid = pidMatch[2];
-              const dtc = `MID${mid} ${pidType}${pid}`;
+              // -------------------------------------------------------------
+              // [SAE J1939 엔진]
+              // -------------------------------------------------------------
+              const dtcMatch = fullRawText.match(/MID\s*(\d+)\s*(PID|PPID|SID|PSID)\s*(\d+)/i);
+              let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : (lines[0]?.text.match(/MID\s*\d+\s*(?:PID|PPID|SID|PSID)\s*\d+/i) || ['MID128 PID111'])[0];
+              dtc = dtc.replace(/\s+/g, ' ').toUpperCase();
 
-              let displayMsg = `${mid} ${pidType}${pid}`;
-              const dispLine = lines.find(l => l.text.includes('텍스트') && l.text.includes('프레젠테이션'));
-              if (dispLine) {
-                const row = dispLine.items.filter(it => it.x >= 70);
-                if (row.length) displayMsg = row.map(it => it.str).join(' ').trim();
-              }
-
-              let ecu = `MID${mid} 엔진 ECU`;
-              const ecuLine = lines.find(l => l.text.includes('컨트롤') && l.text.includes('유니트'));
+              // MID / 컨트롤 유니트
+              let ecu = 'MID128 엔진 ECU';
+              const ecuLine = lines.find(l => (l.text.includes('MID/컨트롤') || l.text.includes('MID/ 컨트롤')) && !l.text.startsWith('MID128 PID'));
               if (ecuLine) {
-                const row = ecuLine.items.filter(it => it.x >= 70);
-                if (row.length) ecu = `MID${mid} ` + row.map(it => it.str).join(' ').replace(/MID\d+/g, '').replace(/^[:\s\-]+/, '').trim();
+                ecu = ecuLine.text.replace(/^MID[/\s]*컨트롤\s*유니트\s*/, '').trim() || ecu;
               }
 
-              let paramName = `${pidType}${pid}`;
-              const paramLine = lines.find(l => (l.text.includes('PID') || l.text.includes('SID')) && l.items[0].x < 70);
+              // PID/PPID/SID/PSID
+              let paramName = dtc;
+              const paramLine = lines.find(l => l.text.startsWith('PID/PPID/SID/PSID') || (l.text.includes('PID/PPID/SID/PSID') && !l.text.startsWith('MID128 PID')));
               if (paramLine) {
-                const row = paramLine.items.filter(it => it.x >= 70);
-                if (row.length) paramName = `${pidType}${pid} ` + row.map(it => it.str).join(' ').replace(new RegExp(`^${pidType}\\s*${pid}`, 'i'), '').replace(/^[:\s\-]+/, '').trim();
+                paramName = paramLine.text.replace(/^PID\/PPID\/SID\/PSID\s*/, '').trim();
               }
 
+              // 텍스트 프레젠테이션
+              let displayMsg = '-';
+              const dispLine = lines.find(l => l.text.startsWith('텍스트 프레젠테이션') || l.text.includes('텍스트 프레젠테이션'));
+              if (dispLine) {
+                displayMsg = dispLine.text.replace(/^텍스트\s*프레젠테이션\s*/, '').trim();
+              }
+
+              // 기준
               let standard = '';
-              const stdLine = lines.find(l => l.text.includes('기준') && !l.text.includes('고장 모드'));
+              const stdLine = lines.find(l => l.text.startsWith('기준') && !l.text.includes('고장 모드'));
               if (stdLine) {
-                const row = stdLine.items.filter(it => it.x >= 70);
-                if (row.length) standard = row.map(it => it.str).join(' ').trim();
+                standard = stdLine.text.replace(/^기준\s*/, '').trim();
               }
 
-              const fmiAnchors = allItems.filter(it => /^FMI\s*(\d+)$/i.test(it.str) || /고장\s*모드\s*FMI\s*(\d+)/i.test(it.str));
-              const fmiList = [];
+              // 다중 FMI 블록 분할 및 수집
+              let fmiList = [];
+              let inDiag = false;
+              let currentFmiSec = [];
 
-              for (let i = 0; i < fmiAnchors.length; i++) {
-                const curAnchor = fmiAnchors[i];
-                const fmiNum = (curAnchor.str.match(/\d+/) || ['3'])[0];
-                const blockTopY = curAnchor.y + 15;
-                const blockBottomY = (i < fmiAnchors.length - 1) ? fmiAnchors[i + 1].y + 15 : 0;
-                const blockItems = allItems.filter(it => it.y <= blockTopY && it.y > blockBottomY);
+              for (let i = 0; i < lines.length; i++) {
+                const t = lines[i].text;
+                if (t.includes('고장 모드 진단')) { inDiag = true; continue; }
+                if (!inDiag) continue;
+                if (t.includes('Guided Diagnostics')) break;
 
-                const condAnchor = blockItems.find(it => it.str.includes('탐지') || it.str.includes('조건'));
-                const symAnchor = blockItems.find(it => it.str.includes('증상'));
-                const causeAnchor = blockItems.find(it => it.str.includes('가능한') || it.str.includes('이유'));
-                const actAnchor = blockItems.find(it => it.str.includes('조치'));
+                if ((t.startsWith('고장 모드') || /^FMI\s*\d+/i.test(t)) && currentFmiSec.length > 0) {
+                  processFmiBlock(currentFmiSec, fmiList, displayMsg, dtc);
+                  currentFmiSec = [lines[i]];
+                } else {
+                  currentFmiSec.push(lines[i]);
+                }
+              }
+              if (currentFmiSec.length > 0) {
+                processFmiBlock(currentFmiSec, fmiList, displayMsg, dtc);
+              }
 
-                let cond = '-';
-                if (condAnchor) {
-                  const condBottomY = symAnchor ? (symAnchor.y + 2) : (condAnchor.y - 30);
-                  const cItems = blockItems.filter(it => it.y <= (condAnchor.y + 6) && it.y >= condBottomY && it.x > (condAnchor.x - 10));
-                  cItems.sort((a, b) => (Math.abs(b.y - a.y) > 2 ? b.y - a.y : a.x - b.x));
-                  cond = cItems.map(it => it.str).join(' ').replace(/.*?탐지\s*조건\s*:\s*/i, '').replace(/^[:\s\-]+/, '').replace(BULLET_CLEAN_REGEX, '').trim() || '-';
+              function processFmiBlock(secLines, list, defaultMsg, defaultDtc) {
+                const blockText = secLines.map(l => l.text).join('\n');
+                const fmiM = blockText.match(/FMI\s*(\d+)/i);
+                if (!fmiM) return;
+                const fmiNum = fmiM[1];
+
+                const condM = blockText.match(/탐지\s*조건\s*[:]?\s*([^\n]+)/);
+                let cond = condM ? condM[1].replace(/FMI\s*\d+/, '').trim() : "-";
+
+                let actionLines = [];
+                let inAction = false;
+                let symptoms = [];
+                let causes = [];
+
+                for (let l of secLines) {
+                  const txt = l.text.trim();
+                  if (txt.startsWith('조치')) {
+                    inAction = true;
+                    const actStr = txt.replace(/^조치\s*/, '').trim();
+                    if (actStr) actionLines.push(actStr);
+                    continue;
+                  }
+                  if (inAction) {
+                    if (txt && !txt.includes('Guided')) actionLines.push(txt);
+                    continue;
+                  }
+
+                  if (txt.includes('증상:') && txt.includes('가능한 이유:') && !txt.includes('○')) continue;
+                  if (txt.startsWith('고장 모드') || txt.startsWith('FMI') || txt.startsWith('탐지 조건')) continue;
+
+                  // 좌/우 분리 (X >= 300 은 가능한 이유, X < 300 은 증상)
+                  const leftItems = l.items.filter(it => it.x < 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
+                  const rightItems = l.items.filter(it => it.x >= 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
+
+                  if (leftItems && !leftItems.includes('증상:') && leftItems !== '없음') symptoms.push(leftItems);
+                  if (rightItems && !rightItems.includes('가능한 이유:') && rightItems !== '없음') causes.push(rightItems);
                 }
 
-                let actions = displayMsg;
-                if (actAnchor) {
-                  const aItems = blockItems.filter(it => Math.abs(it.y - actAnchor.y) <= 8 && it.x > (actAnchor.x + 10));
-                  aItems.sort((a, b) => a.x - b.x);
-                  if (aItems.length) actions = aItems.map(it => it.str).join(' ').trim();
-                }
-
-                const splitFmiX = causeAnchor ? (causeAnchor.x - 10) : 310;
-                const tableTopY = symAnchor ? (symAnchor.y - 2) : (blockTopY - 20);
-                const tableBottomY = actAnchor ? (actAnchor.y + 5) : (blockBottomY + 10);
-                const isLabelNoise = (s) => /^(증상|가능한\s*이유|고장\s*모드|FMI\s*\d+|조치)\s*:?$/i.test(s.trim());
-
-                const leftItems = blockItems.filter(it => it.x < splitFmiX && it.y <= tableTopY && it.y >= tableBottomY && !isLabelNoise(it.str));
-                const rightItems = blockItems.filter(it => it.x >= splitFmiX && it.y <= tableTopY && it.y >= tableBottomY && !isLabelNoise(it.str));
-
-                function assemble(items) {
-                  items.sort((a, b) => (Math.abs(b.y - a.y) > 2 ? b.y - a.y : a.x - b.x));
-                  let linesLocal = [], currY = null, currLine = [];
-                  items.forEach(it => {
-                    if (currY === null || Math.abs(it.y - currY) > 4) {
-                      if (currLine.length) linesLocal.push(currLine.join(' '));
-                      currLine = [it.str];
-                      currY = it.y;
-                    } else {
-                      currLine.push(it.str);
-                    }
-                  });
-                  if (currLine.length) linesLocal.push(currLine.join(' '));
-
-                  let bullets = [];
-                  linesLocal.forEach(line => {
-                    let text = line.trim();
-                    if (!text || text === '없음') return;
-                    if (isBulletStart(text) || bullets.length === 0) {
-                      let cleaned = text.replace(BULLET_CLEAN_REGEX, '').trim();
-                      if (cleaned) bullets.push(cleaned);
-                    } else {
-                      let cleaned = text.replace(BULLET_CLEAN_REGEX, '').trim();
-                      if (cleaned) bullets[bullets.length - 1] += ' ' + cleaned;
-                    }
-                  });
-                  return bullets.length > 0 ? Array.from(new Set(bullets)).join(' | ') : '없음';
-                }
-
-                fmiList.push({
+                list.push({
                   fmi: fmiNum,
-                  cond: cond,
-                  symptom: assemble(leftItems),
-                  causes: assemble(rightItems),
-                  actions: actions
+                  cond: cond || "-",
+                  symptom: symptoms.length > 0 ? [...new Set(symptoms)].join(' | ') : "없음",
+                  causes: causes.length > 0 ? [...new Set(causes)].join(' | ') : "없음",
+                  actions: actionLines.length > 0 ? actionLines.join(' | ') : defaultMsg
                 });
               }
 
               resolve({
                 docType: 'sae',
                 item: {
-                  dtc: dtc, displayMsg: displayMsg, modelType: topData.modelType, factory: topData.factory,
-                  serialStart: topData.serialStart, serialEnd: topData.serialEnd, ecu: ecu, paramName: paramName,
-                  standard: standard, fmiList: fmiList
+                  dtc: dtc,
+                  displayMsg: displayMsg,
+                  modelType: topData.modelType,
+                  factory: topData.factory,
+                  serialStart: topData.serialStart,
+                  serialEnd: topData.serialEnd,
+                  ecu: ecu,
+                  paramName: paramName,
+                  standard: standard,
+                  fmiList: fmiList
                 }
               });
             } else {
-              // --- ISO DTC 정밀 Y-Band 파싱 ---
+              // -------------------------------------------------------------
+              // [ISO 엔진]
+              // -------------------------------------------------------------
               let dtc = '';
               const dtcMatch = fullRawText.match(/([P|U|B|C][0-9A-Z]{5,7})/);
               if (dtcMatch) dtc = dtcMatch[1].replace(/\s+/g, '');
@@ -526,6 +479,35 @@
               const yAct = getLeftAnchorY('조치', '선행');
               const yEnd = (lines.find(l => l.text.includes('Guided Diagnostics') || l.text.includes('주석:')) || { y: 0 }).y;
 
+              function extractRightContentInYBand(topY, bottomY, isBulletSection = true) {
+                const insideItems = allItems.filter(it => it.x >= 70 && it.y <= (topY + 4) && it.y > (bottomY + 4));
+                if (insideItems.length === 0) return isBulletSection ? '없음' : '-';
+
+                insideItems.sort((a, b) => (Math.abs(b.y - a.y) > 3.5 ? b.y - a.y : a.x - b.x));
+                let bLines = [], currY = null, currLine = [];
+                insideItems.forEach(it => {
+                  if (currY === null || Math.abs(it.y - currY) > 3.5) {
+                    if (currLine.length) bLines.push(currLine.join(' '));
+                    currLine = [it.str];
+                    currY = it.y;
+                  } else {
+                    currLine.push(it.str);
+                  }
+                });
+                if (currLine.length) bLines.push(currLine.join(' '));
+
+                if (!isBulletSection) return bLines.join(' ').replace(/^[¡○•●\s\-:]+/, '').trim() || '-';
+
+                let bullets = [];
+                bLines.forEach(l => {
+                  let text = l.trim();
+                  if (!text || text === '없음') return;
+                  const cleaned = text.replace(/^[¡○•●\s\-:]+/, '').trim();
+                  if (cleaned && cleaned !== '없음') bullets.push(cleaned);
+                });
+                return bullets.length > 0 ? [...new Set(bullets)].join(' | ') : '없음';
+              }
+
               let ecu = '일반 용도 장비의 전자 컨트롤 유닛 1';
               if (yECU && yComp) ecu = extractRightContentInYBand(yECU, yComp, false);
 
@@ -543,40 +525,20 @@
                 if (standard === '-') standard = '';
               }
 
-              let eventText = '-';
-              if (yEvent && ySym) {
-                eventText = extractRightContentInYBand(yEvent, ySym, false);
-              }
-
-              let symptomText = '없음';
-              if (ySym && yCond) {
-                symptomText = extractRightContentInYBand(ySym, yCond, true);
-              }
-
-              let condText = '없음';
-              if (yCond && yPre) {
-                condText = extractRightContentInYBand(yCond, yPre, true);
-              }
-
+              let eventText = (yEvent && ySym) ? extractRightContentInYBand(yEvent, ySym, false) : '-';
+              let symptomText = (ySym && yCond) ? extractRightContentInYBand(ySym, yCond, true) : '없음';
+              let condText = (yCond && yPre) ? extractRightContentInYBand(yCond, yPre, true) : '없음';
               let preDtcText = '없음';
               if (yPre && yCause) {
                 const rawPre = extractRightContentInYBand(yPre, yCause, true);
                 if (rawPre && rawPre !== '없음') {
                   const codes = rawPre.match(/([P|U|B|C][0-9A-Z]{5,7})/g) || [];
                   const validCodes = codes.filter(c => c !== dtc && !c.startsWith('DTC'));
-                  preDtcText = validCodes.length > 0 ? Array.from(new Set(validCodes)).join(' | ') : (rawPre.includes('없음') ? '없음' : rawPre);
+                  preDtcText = validCodes.length > 0 ? [...new Set(validCodes)].join(' | ') : (rawPre.includes('없음') ? '없음' : rawPre);
                 }
               }
-
-              let causesText = '없음';
-              if (yCause && yAct) {
-                causesText = extractRightContentInYBand(yCause, yAct, true);
-              }
-
-              let actionsText = '없음';
-              if (yAct) {
-                actionsText = extractRightContentInYBand(yAct, yEnd, true);
-              }
+              let causesText = (yCause && yAct) ? extractRightContentInYBand(yCause, yAct, true) : '없음';
+              let actionsText = yAct ? extractRightContentInYBand(yAct, yEnd, true) : '없음';
 
               resolve({
                 docType: 'iso',
@@ -605,7 +567,7 @@
     }
 
     // =========================================================================
-    // [Turso DB 일괄 저장 실행]
+    // [Turso DB 저장]
     // =========================================================================
     async function saveAllToTursoDb() {
       if (parsedResults.length === 0) return;
@@ -619,7 +581,7 @@
         if (targetItems.length === 0) { alert('저장할 신규 항목이 없습니다.'); btn.disabled = false; return; }
       }
 
-      showStatus(`Turso DB에 ${targetItems.length}건 초고속 저장 중...`, 'loading');
+      showStatus(`Turso DB에 ${targetItems.length}건 정밀 저장 중...`, 'loading');
 
       const requestsBatch = targetItems.map(item => {
         const isSae = item.docType === 'sae';
@@ -630,7 +592,8 @@
           item.dtc,
           item.ecu,
           item.compFull || item.paramName,
-          item.standard,
+          item.displayMsg || '',
+          item.standard || '',
           item.event || '',
           item.symptom || '',
           item.causes || '',
