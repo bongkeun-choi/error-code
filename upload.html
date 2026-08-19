@@ -439,9 +439,25 @@
         const dispLine = lines.find(l => l.text.includes('텍스트 프레젠테이션'));
         if (dispLine) displayMsg = dispLine.text.replace(/^텍스트\s*프레젠테이션\s*/, '').trim();
 
-        let standard = '';
-        const stdLine = lines.find(l => l.text.startsWith('기준') && !l.text.includes('고장 모드'));
-        if (stdLine) standard = stdLine.text.replace(/^기준\s*/, '').trim();
+        let standardLines = [];
+        let inStd = false;
+        for (let l of lines) {
+          const t = l.text.trim();
+          if (t.startsWith('기준') && !t.includes('고장 모드')) {
+            inStd = true;
+            const rest = t.replace(/^기준\s*[:]?\s*/, '').trim();
+            if (rest && rest !== '진단') standardLines.push(rest);
+            continue;
+          }
+          if (inStd) {
+            if (t.includes('고장 모드 진단') || t.includes('고장 모드') || t.includes('Guided Diagnostics')) {
+              inStd = false;
+              break;
+            }
+            if (t && t !== '진단') standardLines.push(t);
+          }
+        }
+        let standard = standardLines.join(' | ').trim();
 
         let diagLines = [];
         let inDiag = false;
@@ -643,8 +659,8 @@
       renderTable();
     }
 
-    // =========================================================================
-    // [1:1 대조창 (Diff Viewer)]
+        // =========================================================================
+    // [1:1 대조창 (Diff Viewer) - ISO 및 SAE 전용 완벽 분리]
     // =========================================================================
     function openDiffModal(idx) {
       currentDiffIndex = idx;
@@ -661,68 +677,141 @@
       else if (item._status === 'MODIFIED') statusTitle = '동일 기종 및 동일 컨트롤러 내용 수정';
       else if (item._status === 'EXACT_DUP') statusTitle = '100% 완전 일치';
 
-      document.getElementById('diffModalTitle').innerText = `[${item.dtc}] 1:1 대조 및 수정 (${statusTitle})`;
+      document.getElementById('diffModalTitle').innerText = `[${item.dtc}] ${isSae ? 'SAE 지침서' : 'ISO DTC'} 1:1 대조 및 수정 (${statusTitle})`;
       const container = document.getElementById('diffGridContainer');
 
       if (!item._existing) {
-        container.innerHTML = `
-          <div style="grid-column: span 2; background:white; padding:16px; border-radius:8px; border:1px solid var(--border);">
-            <h4 style="color:var(--success); margin-bottom:12px;">🟢 신규 등록 데이터 (직접 수정 가능)</h4>
-            <div class="diff-group"><label>적용 기종명</label><input type="text" id="diff_model" class="diff-input" value="${item.model_name || ''}"></div>
-            <div class="diff-group"><label>컨트롤 유니트</label><input type="text" id="diff_ecu" class="diff-input" value="${item.ecu || ''}"></div>
-            <div class="diff-group"><label>DTC 코드 / 구성부품 / 고장유형</label><input type="text" id="diff_comp" class="diff-input" value="${item.compFull || item.paramName || ''}"></div>
-            <div class="diff-group"><label>고장 이벤트</label><textarea id="diff_event" class="diff-input" rows="2">${item.event || ''}</textarea></div>
-            <div class="diff-group"><label>증상</label><textarea id="diff_symptom" class="diff-input" rows="2">${item.symptom || ''}</textarea></div>
-            <div class="diff-group"><label>가능한 이유</label><textarea id="diff_causes" class="diff-input" rows="3">${item.causes || ''}</textarea></div>
-            <div class="diff-group"><label>조치</label><textarea id="diff_actions" class="diff-input" rows="3">${item.actions || ''}</textarea></div>
-          </div>
-        `;
+        // [신규 등록 또는 단독 미리보기]
+        if (isSae) {
+          container.innerHTML = `
+            <div style="grid-column: span 2; background:white; padding:16px; border-radius:8px; border:1px solid var(--border);">
+              <h4 style="color:var(--sae-badge); margin-bottom:12px;">📙 SAE 코드 신규 분석 데이터 (MID/PID/SID/FMI 모드)</h4>
+              <div class="diff-group"><label>적용 기종명</label><input type="text" id="diff_model" class="diff-input" value="${item.model_name || ''}"></div>
+              <div class="diff-group"><label>MID / 컨트롤 유니트</label><input type="text" id="diff_ecu" class="diff-input" value="${item.ecu || ''}"></div>
+              <div class="diff-group"><label>PID/PPID/SID/PSID 파라미터명</label><input type="text" id="diff_paramName" class="diff-input" value="${item.paramName || item.dtc || ''}"></div>
+              <div class="diff-group"><label>장비 디스플레이 메시지</label><input type="text" id="diff_displayMsg" class="diff-input" value="${item.displayMsg || ''}"></div>
+              <div class="diff-group"><label>기준</label><input type="text" id="diff_standard" class="diff-input" value="${item.standard || ''}"></div>
+              <div class="diff-group">
+                <label>고장 모드 진단 (FMI 리스트 - 총 ${(item.fmiList || []).length}개 모드 감지됨)</label>
+                <textarea id="diff_fmi_json" class="diff-input" rows="8" style="font-family:monospace; font-size:11.5px;">${JSON.stringify(item.fmiList || [], null, 2)}</textarea>
+              </div>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div style="grid-column: span 2; background:white; padding:16px; border-radius:8px; border:1px solid var(--border);">
+              <h4 style="color:var(--success); margin-bottom:12px;">🟢 ISO DTC 신규 분석 데이터</h4>
+              <div class="diff-group"><label>적용 기종명</label><input type="text" id="diff_model" class="diff-input" value="${item.model_name || ''}"></div>
+              <div class="diff-group"><label>컨트롤 유니트 (ECU)</label><input type="text" id="diff_ecu" class="diff-input" value="${item.ecu || ''}"></div>
+              <div class="diff-group"><label>DTC 코드 / 구성부품 / 고장유형</label><input type="text" id="diff_comp" class="diff-input" value="${item.compFull || item.dtc || ''}"></div>
+              <div class="diff-group"><label>기준</label><input type="text" id="diff_standard" class="diff-input" value="${item.standard || ''}"></div>
+              <div class="diff-group"><label>고장 이벤트</label><textarea id="diff_event" class="diff-input" rows="2">${item.event || ''}</textarea></div>
+              <div class="diff-group"><label>증상</label><textarea id="diff_symptom" class="diff-input" rows="2">${item.symptom || ''}</textarea></div>
+              <div class="diff-group"><label>조건</label><textarea id="diff_condition" class="diff-input" rows="2">${item.condition || ''}</textarea></div>
+              <div class="diff-group"><label>선행조치 DTC</label><input type="text" id="diff_preDtc" class="diff-input" value="${item.preDtc || ''}"></div>
+              <div class="diff-group"><label>가능한 이유</label><textarea id="diff_causes" class="diff-input" rows="3">${item.causes || ''}</textarea></div>
+              <div class="diff-group"><label>조치</label><textarea id="diff_actions" class="diff-input" rows="3">${item.actions || ''}</textarea></div>
+            </div>
+          `;
+        }
       } else {
-        const fields = isSae ? [
-          { key: 'model_name', label: '적용 기종명' },
-          { key: 'ecu', label: 'MID / 컨트롤 유니트' },
-          { key: 'paramName', oldKey: 'compName', label: 'PID/PPID/SID/PSID' },
-          { key: 'displayMsg', label: '디스플레이 문구' },
-          { key: 'standard', label: '기준' }
-        ] : [
-          { key: 'model_name', label: '적용 기종명' },
-          { key: 'ecu', label: '컨트롤 유니트' },
-          { key: 'compFull', oldKey: 'compName', label: 'DTC 코드 / 구성부품' },
-          { key: 'standard', label: '기준' },
-          { key: 'event', label: '고장 이벤트' },
-          { key: 'symptom', label: '증상' },
-          { key: 'condition', label: '조건' },
-          { key: 'preDtc', label: '선행조치 DTC' },
-          { key: 'causes', label: '가능한 이유' },
-          { key: 'actions', label: '조치 내용' }
-        ];
+        // [기존 DB 데이터와 1:1 대조]
+        if (isSae) {
+          const fields = [
+            { key: 'model_name', label: '적용 기종명' },
+            { key: 'ecu', label: 'MID / 컨트롤 유니트' },
+            { key: 'paramName', oldKey: 'compName', label: 'PID/PPID/SID/PSID' },
+            { key: 'displayMsg', label: '장비 디스플레이 메시지' },
+            { key: 'standard', label: '기준' }
+          ];
 
-        let leftHtml = `<div class="diff-col"><h4 style="color:var(--danger);">⚠️ 기존 DB 데이터 (${old.model_name || '타 기종'})</h4>`;
-        let rightHtml = `<div class="diff-col"><h4 style="color:var(--accent);">✨ 새 PDF 분석 데이터 (${item.model_name || '현재 기종'})</h4>`;
+          let leftHtml = `<div class="diff-col"><h4 style="color:var(--danger);">⚠️ 기존 DB 데이터 (${old.model_name || '타 기종'})</h4>`;
+          let rightHtml = `<div class="diff-col"><h4 style="color:var(--sae-badge);">📙 새 SAE PDF 분석 데이터 (${item.model_name || '현재 기종'})</h4>`;
 
-        fields.forEach(f => {
-          const oldVal = old[f.key] || old[f.oldKey] || '없음';
-          const newVal = item[f.key] || '없음';
-          const isDiff = String(oldVal).trim() !== String(newVal).trim();
+          fields.forEach(f => {
+            const oldVal = old[f.key] || old[f.oldKey] || '없음';
+            const newVal = item[f.key] || '없음';
+            const isDiff = String(oldVal).trim() !== String(newVal).trim();
+
+            leftHtml += `
+              <div class="diff-group">
+                <label>${f.label}</label>
+                <div class="diff-old-val ${isDiff ? '' : 'style="background:#f1f5f9; border-color:#cbd5e1;"'}">${oldVal}</div>
+              </div>
+            `;
+
+            rightHtml += `
+              <div class="diff-group">
+                <label>${f.label}</label>
+                <input type="text" id="diff_${f.key}" class="diff-input ${isDiff ? 'is-diff' : ''}" value="${newVal}">
+              </div>
+            `;
+          });
+
+          // FMI 블록 대조
+          const oldFmiJson = JSON.stringify(old.fmiList || [], null, 2);
+          const newFmiJson = JSON.stringify(item.fmiList || [], null, 2);
+          const isFmiDiff = oldFmiJson !== newFmiJson;
 
           leftHtml += `
             <div class="diff-group">
-              <label>${f.label}</label>
-              <div class="diff-old-val ${isDiff ? '' : 'style="background:#f1f5f9; border-color:#cbd5e1;"'}">${oldVal}</div>
+              <label>기존 FMI 고장 모드 리스트 (${(old.fmiList || []).length}개)</label>
+              <div class="diff-old-val" style="font-family:monospace; font-size:11px; white-space:pre-wrap; max-height:160px; overflow-y:auto;">${oldFmiJson}</div>
             </div>
           `;
 
           rightHtml += `
             <div class="diff-group">
-              <label>${f.label}</label>
-              <textarea id="diff_${f.key}" class="diff-input ${isDiff ? 'is-diff' : ''}" rows="${f.key === 'causes' || f.key === 'actions' || f.key === 'event' ? 3 : 1}">${newVal}</textarea>
+              <label>새 FMI 고장 모드 리스트 (${(item.fmiList || []).length}개)</label>
+              <textarea id="diff_fmi_json" class="diff-input ${isFmiDiff ? 'is-diff' : ''}" rows="7" style="font-family:monospace; font-size:11.5px;">${newFmiJson}</textarea>
             </div>
           `;
-        });
 
-        leftHtml += '</div>';
-        rightHtml += '</div>';
-        container.innerHTML = leftHtml + rightHtml;
+          leftHtml += '</div>';
+          rightHtml += '</div>';
+          container.innerHTML = leftHtml + rightHtml;
+        } else {
+          // ISO DTC 대조
+          const fields = [
+            { key: 'model_name', label: '적용 기종명' },
+            { key: 'ecu', label: '컨트롤 유니트' },
+            { key: 'compFull', oldKey: 'compName', label: 'DTC 코드 / 구성부품' },
+            { key: 'standard', label: '기준' },
+            { key: 'event', label: '고장 이벤트' },
+            { key: 'symptom', label: '증상' },
+            { key: 'condition', label: '조건' },
+            { key: 'preDtc', label: '선행조치 DTC' },
+            { key: 'causes', label: '가능한 이유' },
+            { key: 'actions', label: '조치 내용' }
+          ];
+
+          let leftHtml = `<div class="diff-col"><h4 style="color:var(--danger);">⚠️ 기존 DB 데이터 (${old.model_name || '타 기종'})</h4>`;
+          let rightHtml = `<div class="diff-col"><h4 style="color:var(--accent);">✨ 새 PDF 분석 데이터 (${item.model_name || '현재 기종'})</h4>`;
+
+          fields.forEach(f => {
+            const oldVal = old[f.key] || old[f.oldKey] || '없음';
+            const newVal = item[f.key] || '없음';
+            const isDiff = String(oldVal).trim() !== String(newVal).trim();
+
+            leftHtml += `
+              <div class="diff-group">
+                <label>${f.label}</label>
+                <div class="diff-old-val ${isDiff ? '' : 'style="background:#f1f5f9; border-color:#cbd5e1;"'}">${oldVal}</div>
+              </div>
+            `;
+
+            rightHtml += `
+              <div class="diff-group">
+                <label>${f.label}</label>
+                <textarea id="diff_${f.key}" class="diff-input ${isDiff ? 'is-diff' : ''}" rows="${f.key === 'causes' || f.key === 'actions' || f.key === 'event' ? 3 : 1}">${newVal}</textarea>
+              </div>
+            `;
+          });
+
+          leftHtml += '</div>';
+          rightHtml += '</div>';
+          container.innerHTML = leftHtml + rightHtml;
+        }
       }
 
       document.getElementById('diffModal').style.display = 'flex';
@@ -738,11 +827,36 @@
       const item = parsedResults[currentDiffIndex];
       const isSae = (item.docType || '').toUpperCase() === 'SAE';
 
-      const fields = isSae ? ['model_name', 'ecu', 'paramName', 'displayMsg', 'standard'] : ['model_name', 'ecu', 'compFull', 'standard', 'event', 'symptom', 'condition', 'preDtc', 'causes', 'actions'];
-      fields.forEach(f => {
-        const el = document.getElementById(`diff_${f}`);
-        if (el) item[f] = el.value.trim();
-      });
+      if (isSae) {
+        const getVal = (id) => (document.getElementById(id)?.value || '').trim();
+        item.model_name = getVal('diff_model') || item.model_name;
+        item.ecu = getVal('diff_ecu') || item.ecu;
+        item.paramName = getVal('diff_paramName') || item.paramName;
+        item.displayMsg = getVal('diff_displayMsg') || item.displayMsg;
+        item.standard = getVal('diff_standard') || item.standard;
+        
+        const fmiJsonEl = document.getElementById('diff_fmi_json');
+        if (fmiJsonEl) {
+          try {
+            item.fmiList = JSON.parse(fmiJsonEl.value);
+          } catch(e) {
+            alert('FMI JSON 형식 오류입니다. 올바른 JSON 형식을 입력해주세요.');
+            return;
+          }
+        }
+      } else {
+        const getVal = (id) => (document.getElementById(id)?.value || '').trim();
+        item.model_name = getVal('diff_model') || item.model_name;
+        item.ecu = getVal('diff_ecu') || item.ecu;
+        item.compFull = getVal('diff_comp') || getVal('diff_compFull') || item.compFull;
+        item.standard = getVal('diff_standard') || item.standard;
+        item.event = getVal('diff_event') || item.event;
+        item.symptom = getVal('diff_symptom') || item.symptom;
+        item.condition = getVal('diff_condition') || item.condition;
+        item.preDtc = getVal('diff_preDtc') || item.preDtc;
+        item.causes = getVal('diff_causes') || item.causes;
+        item.actions = getVal('diff_actions') || item.actions;
+      }
 
       // 기종명 및 컨트롤 유니트 변경 시 복합 키 갱신
       item.unique_id = buildUniqueKey(item.dtc, item.model_name, item.ecu);
