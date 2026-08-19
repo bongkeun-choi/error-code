@@ -1,178 +1,285 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="naver" data-view="card">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#03c75a" id="metaThemeColor">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>볼보 진단 매뉴얼 뷰어</title>
+  <title>볼보 진단 매뉴얼 - 네이버페이 스타일</title>
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
+    /* ========================================================
+       1. 디자인 테마 변수 시스템 (네이버페이 / 다크모드 / OEM)
+       ======================================================== */
     :root {
-      --primary-dark: #0f172a;
-      --accent: #0284c7;
-      --accent-light: #e0f2fe;
-      --accent-dark: #0369a1;
-      --danger: #dc2626;
-      --danger-light: #fee2e2;
-      --warning: #d97706;
-      --warning-light: #fef3c7;
-      --success: #16a34a;
-      --success-light: #dcfce7;
-      --variant-purple: #7c3aed;
-      --sae-badge: #c2410c;
-      --bg: #f8fafc;
+      /* 기본 네이버페이 모바일 테마 */
+      --np-green: #03c75a;
+      --np-green-light: #e8f9ef;
+      --np-green-dark: #029f48;
+      --np-blue: #0077ff;
+      --np-blue-light: #eaf3ff;
+      --np-red: #f44336;
+      --np-red-light: #fef2f2;
+      --np-orange: #ff9500;
+      --np-orange-light: #fff8f0;
+      --np-purple: #7952b3;
+      --np-purple-light: #f5f0ff;
+
+      --bg: #f4f6f8;
       --card-bg: #ffffff;
-      --border: #e2e8f0;
-      --border-strong: #cbd5e1;
-      --text: #0f172a;
-      --muted: #64748b;
-      --radius-sm: 8px;
-      --radius-md: 14px;
-      --radius-lg: 20px;
-    }
-    * { 
-      box-sizing: border-box; 
-      margin: 0; 
-      padding: 0; 
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
-      -webkit-tap-highlight-color: transparent; 
-    }
-    body { 
-      background: var(--bg); 
-      color: var(--text); 
-      padding-bottom: 90px; 
-      -webkit-font-smoothing: antialiased; 
+      --header-bg: #03c75a;
+      --header-text: #ffffff;
+      --text: #111111;
+      --text-sub: #666666;
+      --text-muted: #8e95a0;
+      --border: #eaedf0;
+      --border-strong: #dbe0e5;
+      --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+      --chip-bg: #ffffff;
+      --chip-text: #333333;
+      --chip-border: #e2e5e8;
+      --highlight: #ffe600;
+      --box-inner-bg: #f8fafb;
     }
 
-    /* 📱 모바일 최적화 헤더 */
-    .header { 
-      background: var(--primary-dark); 
-      color: white; 
-      padding: 12px 16px; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      position: sticky; 
-      top: 0; 
-      z-index: 100; 
-      box-shadow: 0 4px 12px rgba(0,0,0,0.12); 
-    }
-    .header-title { 
-      font-size: 16px; 
-      font-weight: 800; 
-      letter-spacing: -0.3px; 
-      display: flex; 
-      align-items: center; 
-      gap: 6px; 
-    }
-    .header-links { 
-      display: flex; 
-      align-items: center; 
-      gap: 8px; 
-    }
-    .header-btn { 
-      background: rgba(255,255,255,0.12); 
-      color: white; 
-      padding: 6px 10px; 
-      border-radius: var(--radius-sm); 
-      font-size: 12px; 
-      font-weight: 700; 
-      text-decoration: none; 
-      display: inline-flex; 
-      align-items: center; 
-      gap: 4px;
-      border: 1px solid rgba(255,255,255,0.15);
-      transition: all 0.2s;
-    }
-    .header-btn:active { background: rgba(255,255,255,0.25); transform: scale(0.97); }
-    .live-indicator { 
-      font-size: 11px; 
-      background: rgba(16, 185, 129, 0.15); 
-      color: #34d399; 
-      border: 1px solid rgba(16, 185, 129, 0.35); 
-      padding: 3px 7px; 
-      border-radius: 20px; 
-      font-weight: 700; 
-      display: flex; 
-      align-items: center; 
-      gap: 4px; 
-    }
-    .live-dot { width: 6px; height: 6px; background: #34d399; border-radius: 50%; box-shadow: 0 0 8px #34d399; }
-
-    .container { 
-      max-width: 960px; 
-      margin: 0 auto; 
-      padding: 12px 14px; 
+    /* 🌙 야간 모드 (다크 테마) */
+    html[data-theme="dark"] {
+      --bg: #121417;
+      --card-bg: #1e2228;
+      --header-bg: #181b20;
+      --header-text: #ffffff;
+      --text: #f0f3f6;
+      --text-sub: #a0aec0;
+      --text-muted: #718096;
+      --border: #2d343f;
+      --border-strong: #3e4756;
+      --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+      --chip-bg: #272d36;
+      --chip-text: #e2e8f0;
+      --chip-border: #3a4350;
+      --highlight: #d97706;
+      --box-inner-bg: #262c35;
+      --np-green-light: rgba(3, 199, 90, 0.15);
+      --np-blue-light: rgba(0, 119, 255, 0.15);
+      --np-red-light: rgba(244, 67, 54, 0.15);
+      --np-orange-light: rgba(255, 149, 0, 0.15);
+      --np-purple-light: rgba(121, 82, 179, 0.15);
     }
 
-    /* 🔍 상단 고정형 모바일 검색바 & 퀵칩 */
-    .search-sticky-wrap {
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
       background: var(--bg);
-      padding: 4px 0 10px 0;
-      position: sticky;
-      top: 50px;
-      z-index: 90;
+      color: var(--text);
+      padding-bottom: 90px;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.25s, color 0.25s;
     }
-    .search-box { 
-      position: relative; 
+
+    /* ========================================================
+       2. 네이버페이 스타일 상단 헤더
+       ======================================================== */
+    .np-header {
+      background: var(--header-bg);
+      color: var(--header-text);
+      padding: 14px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.25s;
+    }
+    .np-header-brand {
       display: flex;
       align-items: center;
+      gap: 7px;
+      font-size: 17px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+    .np-badge-n {
       background: white;
-      border-radius: 14px;
-      border: 2px solid #cbd5e1;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      color: #03c75a;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 900;
+    }
+    html[data-theme="dark"] .np-badge-n {
+      background: #03c75a;
+      color: white;
+    }
+    .np-header-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .np-btn-uploader {
+      background: rgba(255,255,255,0.22);
+      color: white;
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      backdrop-filter: blur(4px);
+    }
+    .np-btn-uploader:active {
+      transform: scale(0.95);
+    }
+
+    /* ========================================================
+       3. 모드 전환 세그먼트 컨트롤 (네이버페이 카드 / OEM 표 / 야간모드)
+       ======================================================== */
+    .mode-switch-container {
+      max-width: 960px;
+      margin: 10px auto 0;
+      padding: 0 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .segment-tabs {
+      background: var(--chip-bg);
+      border: 1px solid var(--border-strong);
+      padding: 3px;
+      border-radius: 24px;
+      display: inline-flex;
+      gap: 3px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .seg-tab {
+      border: none;
+      background: transparent;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--text-sub);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.18s ease;
+    }
+    .seg-tab.active {
+      background: var(--np-green);
+      color: #ffffff;
+      box-shadow: 0 2px 6px rgba(3, 199, 90, 0.35);
+    }
+    html[data-theme="dark"] .seg-tab.active {
+      background: #03c75a;
+      color: #ffffff;
+    }
+
+    .theme-toggle-btn {
+      background: var(--chip-bg);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s;
+    }
+    .theme-toggle-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* ========================================================
+       4. 네이버페이 검색바 & 퀵 필터 칩
+       ======================================================== */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 10px 14px 20px;
+    }
+    .search-sticky-wrap {
+      position: sticky;
+      top: 56px;
+      z-index: 90;
+      background: var(--bg);
+      padding: 6px 0 10px;
+      transition: background 0.25s;
+    }
+    .np-search-box {
+      position: relative;
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 2px solid var(--np-green);
+      box-shadow: 0 4px 16px rgba(3, 199, 90, 0.12);
+      display: flex;
+      align-items: center;
       transition: all 0.2s ease;
     }
-    .search-box:focus-within {
-      border-color: var(--accent);
-      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.2);
+    html[data-theme="dark"] .np-search-box {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     }
-    .search-icon {
+    .np-search-icon {
       padding-left: 14px;
       font-size: 17px;
-      color: var(--muted);
-      user-select: none;
-      display: flex;
-      align-items: center;
+      color: var(--np-green);
+      font-weight: bold;
     }
-    .search-input { 
-      width: 100%; 
-      padding: 13px 40px 13px 10px; 
-      font-size: 16px; 
-      font-weight: 700; 
+    .np-search-input {
+      width: 100%;
+      padding: 14px 42px 14px 10px;
+      font-size: 16px;
+      font-weight: 700;
       border: none;
-      outline: none; 
+      outline: none;
       background: transparent;
       color: var(--text);
     }
-    .search-input::placeholder {
+    .np-search-input::placeholder {
       font-size: 14px;
-      color: #94a3b8;
+      color: var(--text-muted);
       font-weight: 500;
     }
-    .clear-btn { 
-      position: absolute; 
-      right: 10px; 
+    .clear-btn {
+      position: absolute;
+      right: 12px;
       width: 26px;
       height: 26px;
       border-radius: 50%;
-      background: #e2e8f0;
-      color: #475569;
-      border: none; 
-      cursor: pointer; 
-      display: none; 
+      background: var(--border-strong);
+      color: var(--text-sub);
+      border: none;
+      cursor: pointer;
+      display: none;
       align-items: center;
       justify-content: center;
       font-size: 13px;
       font-weight: bold;
     }
-    .clear-btn:active { background: #cbd5e1; }
+    .clear-btn:active {
+      transform: scale(0.9);
+    }
 
-    /* 🏷️ 퀵 필터 칩 (Quick Filter Chips) */
+    /* 칩 태그 바 */
     .chips-scroll-wrap {
-      margin-top: 8px;
+      margin-top: 10px;
       display: flex;
       gap: 6px;
       overflow-x: auto;
@@ -181,291 +288,307 @@
       scrollbar-width: none;
     }
     .chips-scroll-wrap::-webkit-scrollbar { display: none; }
-    .chip {
+    .np-chip {
       flex-shrink: 0;
-      padding: 6px 12px;
-      background: white;
-      border: 1px solid var(--border-strong);
+      padding: 6px 13px;
+      background: var(--chip-bg);
+      border: 1px solid var(--chip-border);
       border-radius: 20px;
       font-size: 12.5px;
       font-weight: 700;
-      color: #334155;
+      color: var(--chip-text);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+      transition: all 0.15s;
+    }
+    .np-chip:active {
+      transform: scale(0.94);
+    }
+    .np-chip.active, .np-chip:hover {
+      background: var(--np-green);
+      color: white;
+      border-color: var(--np-green);
+      box-shadow: 0 2px 8px rgba(3, 199, 90, 0.3);
+    }
+
+    .status-bar {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin: 6px 2px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* ========================================================
+       5. [모드 1 & 3] 네이버페이 모바일 스마트 카드 뷰
+       ======================================================== */
+    .np-card {
+      background: var(--card-bg);
+      border-radius: 18px;
+      border: 1px solid var(--border);
+      box-shadow: var(--card-shadow);
+      margin-bottom: 18px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .np-card-top {
+      padding: 14px 16px;
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    @media (min-width: 640px) {
+      .np-card-top {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+    .np-card-header-left {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge-dtc-np {
+      background: #ff3b30;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: -0.3px;
+      box-shadow: 0 2px 6px rgba(255, 59, 48, 0.25);
+    }
+    .badge-sae-np {
+      background: #ff9500;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: -0.3px;
+      box-shadow: 0 2px 6px rgba(255, 149, 0, 0.25);
+    }
+    .badge-model-np {
+      background: var(--np-green-light);
+      color: var(--np-green-dark);
+      border: 1px solid rgba(3, 199, 90, 0.25);
+      padding: 4px 9px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    html[data-theme="dark"] .badge-model-np {
+      color: #03c75a;
+    }
+    .np-comp-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .np-card-actions {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      width: 100%;
+      justify-content: flex-end;
+    }
+    @media (min-width: 640px) {
+      .np-card-actions { width: auto; }
+    }
+    .np-action-btn {
+      background: var(--chip-bg);
+      border: 1px solid var(--border-strong);
+      padding: 6px 11px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       gap: 4px;
       transition: all 0.15s;
     }
-    .chip:active {
-      transform: scale(0.94);
+    .np-action-btn:active { transform: scale(0.95); }
+    .np-action-edit { color: var(--np-blue); border-color: rgba(0,119,255,0.3); background: var(--np-blue-light); }
+    .np-action-delete { color: var(--np-red); border-color: rgba(244,67,54,0.3); background: var(--np-red-light); }
+
+    .np-card-content {
+      padding: 16px;
     }
-    .chip.active, .chip:hover {
-      background: #0284c7;
-      color: white;
-      border-color: #0284c7;
-      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    .np-dtc-main-title {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 14px;
+      line-height: 1.35;
+      letter-spacing: -0.3px;
     }
 
-    /* 📊 상태 표시줄 */
-    .status-bar { 
-      font-size: 12.5px; 
-      color: var(--muted); 
-      font-weight: 600; 
-      margin: 4px 2px 12px 2px; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center;
-    }
-
-    /* 📄 결과 카드 UI */
-    .card { 
-      background: var(--card-bg); 
-      border: 1px solid var(--border); 
-      border-radius: var(--radius-md); 
-      margin-bottom: 16px; 
-      overflow: hidden; 
-      box-shadow: 0 3px 10px rgba(0,0,0,0.04); 
-    }
-    .card-header { 
-      padding: 12px 14px; 
-      background: #f8fafc; 
-      border-bottom: 1px solid var(--border); 
-      display: flex; 
-      flex-direction: column;
-      gap: 10px;
-    }
-    @media (min-width: 640px) {
-      .card-header {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-      }
-    }
-    .card-badges {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-    }
-    .badge-dtc { 
-      background: var(--danger); 
-      color: white; 
-      padding: 4px 10px; 
-      border-radius: 8px; 
-      font-weight: 900; 
-      font-size: 14px; 
-      letter-spacing: -0.2px;
-      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
-    }
-    .badge-sae-dtc { 
-      background: var(--sae-badge); 
-      color: white; 
-      padding: 4px 10px; 
-      border-radius: 8px; 
-      font-weight: 900; 
-      font-size: 14px; 
-      letter-spacing: -0.2px;
-      box-shadow: 0 2px 6px rgba(194, 65, 12, 0.25);
-    }
-    .badge-model-tag { 
-      background: #ede9fe; 
-      color: var(--variant-purple); 
-      border: 1px solid #ddd6fe; 
-      padding: 4px 9px; 
-      border-radius: 8px; 
-      font-size: 12px; 
-      font-weight: 800; 
-    }
-    .card-comp-name {
-      font-size: 13.5px;
-      font-weight: 800;
-      color: #1e293b;
-      word-break: break-word;
-    }
-
-    .card-actions { 
-      display: flex; 
-      gap: 6px; 
-      align-items: center; 
-      width: 100%;
-      justify-content: flex-end;
-    }
-    @media (min-width: 640px) {
-      .card-actions { width: auto; }
-    }
-    
-    .btn-action { 
-      background: white; 
-      border: 1px solid var(--border-strong); 
-      padding: 6px 12px; 
-      border-radius: var(--radius-sm); 
-      font-size: 12px; 
-      font-weight: 700; 
-      cursor: pointer; 
-      transition: 0.15s; 
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .btn-action:active { transform: scale(0.96); background: #e2e8f0; }
-    .btn-copy { color: #334155; }
-    .btn-edit { color: var(--accent); border-color: #bae6fd; background: #f0f9ff; }
-    .btn-delete { color: var(--danger); border-color: #fecaca; background: #fef2f2; }
-
-    /* 본문 시트 및 모바일 뷰 */
-    .oem-sheet { padding: 14px; font-size: 13.5px; }
-    .oem-title { 
-      font-size: 18px; 
-      font-weight: 900; 
-      margin-bottom: 12px; 
-      color: #0f172a; 
-      word-break: break-word; 
-      line-height: 1.3;
-    }
-
-    /* 🧱 모바일 반응형 정보 섹션 블록 */
-    .info-card-group {
+    /* 네이버페이 섹션 정보 박스 */
+    .np-info-section {
       display: flex;
       flex-direction: column;
       gap: 10px;
       margin-bottom: 14px;
     }
-    .info-box {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: var(--radius-sm);
-      padding: 10px 12px;
+    .np-info-tile {
+      background: var(--box-inner-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
     }
-    .info-box.danger-accent {
-      background: #fff1f2;
-      border-color: #fecdd3;
+    .np-info-tile.action-tile {
+      background: var(--np-blue-light);
+      border-left: 4px solid var(--np-blue);
+      border-color: rgba(0, 119, 255, 0.25);
     }
-    .info-box.blue-accent {
-      background: #f0f9ff;
-      border-color: #bae6fd;
+    .np-info-tile.danger-tile {
+      background: var(--np-red-light);
+      border-left: 4px solid var(--np-red);
+      border-color: rgba(244, 67, 54, 0.25);
     }
-    .info-box.warn-accent {
-      background: #fffbeb;
-      border-color: #fde68a;
+    .np-info-tile.warn-tile {
+      background: var(--np-orange-light);
+      border-left: 4px solid var(--np-orange);
+      border-color: rgba(255, 149, 0, 0.25);
     }
-
-    .info-label {
-      font-size: 11.5px;
+    .np-tile-label {
+      font-size: 12px;
       font-weight: 800;
-      color: var(--muted);
-      margin-bottom: 5px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 5px;
     }
-    .info-box.danger-accent .info-label { color: #be123c; }
-    .info-box.blue-accent .info-label { color: #0369a1; }
-    .info-box.warn-accent .info-label { color: #b45309; }
+    .np-info-tile.action-tile .np-tile-label { color: var(--np-blue); }
+    .np-info-tile.danger-tile .np-tile-label { color: var(--np-red); }
+    .np-info-tile.warn-tile .np-tile-label { color: var(--np-orange); }
 
-    .info-value {
+    .np-tile-body {
       font-size: 13.5px;
-      line-height: 1.5;
-      color: #1e293b;
+      line-height: 1.55;
+      color: var(--text);
     }
 
-    /* 표 가로스크롤 지원 */
-    .oem-tbl-wrap {
-      overflow-x: auto;
-      margin-bottom: 12px;
-      border-radius: var(--radius-sm);
-      -webkit-overflow-scrolling: touch;
-    }
-    .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 12.5px; }
-    .oem-tbl th, .oem-tbl td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; line-height: 1.4; }
-    .oem-tbl th { background: #e2e8f0; font-weight: 800; text-align: left; }
-    
-    .bullet-item { margin-bottom: 4px; display: flex; gap: 6px; align-items: flex-start; line-height: 1.45; }
-    .bullet-icon { color: #0284c7; font-weight: bold; flex-shrink: 0; font-size: 11px; margin-top: 2px; }
-    .highlight { background-color: #fef08a; padding: 1px 3px; border-radius: 3px; font-weight: 800; }
-    
-    .empty-state { 
-      text-align: center; 
-      padding: 40px 16px; 
-      color: var(--muted); 
-      background: white; 
-      border-radius: var(--radius-md); 
-      border: 1px dashed var(--border-strong);
-      margin-top: 6px;
-    }
-    .empty-state-icon { font-size: 38px; margin-bottom: 8px; }
-    .empty-state-title { font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 6px; }
-    .empty-state-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
-
-    /* FMI 고장 모드 모바일 카드 */
-    .fmi-card {
-      background: #fff;
-      border: 1.5px solid #fed7aa;
-      border-radius: var(--radius-sm);
+    /* FMI 스마트 카드 */
+    .np-fmi-box {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-strong);
+      border-radius: 12px;
       margin-bottom: 12px;
       overflow: hidden;
     }
-    .fmi-header {
-      background: #ffedd5;
-      padding: 8px 12px;
+    .np-fmi-top {
+      background: var(--np-orange-light);
+      padding: 10px 14px;
       font-weight: 800;
-      color: #9a3412;
+      color: var(--np-orange);
       display: flex;
       justify-content: space-between;
       align-items: center;
       font-size: 13px;
+      border-bottom: 1px solid rgba(255, 149, 0, 0.2);
     }
-    .fmi-body { padding: 10px 12px; font-size: 13px; }
+    .np-fmi-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ========================================================
+       6. [모드 2] 원래 처음 모드 (OEM 원본 표 모드)
+       ======================================================== */
+    .oem-sheet { padding: 16px; font-size: 13px; }
+    .oem-title { font-size: 18px; font-weight: 900; margin-bottom: 12px; color: var(--text); }
+    .oem-tbl-wrap { overflow-x: auto; margin-bottom: 14px; -webkit-overflow-scrolling: touch; }
+    .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid var(--border-strong); font-size: 12.5px; }
+    .oem-tbl th, .oem-tbl td { border: 1px solid var(--border); padding: 7px 10px; vertical-align: top; line-height: 1.45; }
+    .oem-tbl th { background: var(--box-inner-bg); font-weight: 800; text-align: left; color: var(--text); }
+    html[data-theme="dark"] .oem-tbl { border-color: #3e4756; }
+    html[data-theme="dark"] .oem-tbl th, html[data-theme="dark"] .oem-tbl td { border-color: #2d343f; }
+
+    /* 글머리 기호 및 하이라이트 */
+    .bullet-item { margin-bottom: 4px; display: flex; gap: 6px; align-items: flex-start; line-height: 1.45; }
+    .bullet-icon { color: var(--np-green); font-weight: bold; flex-shrink: 0; font-size: 12px; margin-top: 2px; }
+    .highlight { background-color: var(--highlight); color: #000; padding: 1px 3px; border-radius: 3px; font-weight: 800; }
+    html[data-theme="dark"] .highlight { color: #fff; }
+
+    /* 비어있는 상태 UI */
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--text-muted);
+      background: var(--card-bg);
+      border-radius: 18px;
+      border: 1px dashed var(--border-strong);
+      margin-top: 10px;
+    }
+    .empty-state-icon { font-size: 40px; margin-bottom: 10px; }
+    .empty-state-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .empty-state-desc { font-size: 13px; color: var(--text-sub); line-height: 1.5; }
 
     /* 상단 이동 플로팅 버튼 */
     .scroll-top-btn {
       position: fixed;
       right: 16px;
       bottom: 20px;
-      width: 44px;
-      height: 44px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
-      background: var(--primary-dark);
+      background: var(--np-green);
       color: white;
       border: none;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      box-shadow: 0 4px 16px rgba(3, 199, 90, 0.4);
       cursor: pointer;
       display: none;
       align-items: center;
       justify-content: center;
       font-size: 20px;
       z-index: 99;
-      transition: opacity 0.2s, transform 0.2s;
+      transition: all 0.2s;
     }
     .scroll-top-btn:active { transform: scale(0.9); }
 
-    /* 모바일 바텀시트 스타일 모달 */
-    .modal-overlay { 
-      display: none; 
-      position: fixed; 
-      inset: 0; 
-      background: rgba(15, 23, 42, 0.6); 
-      z-index: 1000; 
-      align-items: flex-end; 
-      justify-content: center; 
-      backdrop-filter: blur(4px); 
+    /* 모바일 바텀시트 모달 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      align-items: flex-end;
+      justify-content: center;
+      backdrop-filter: blur(4px);
     }
     @media (min-width: 640px) {
-      .modal-overlay {
-        align-items: center;
-        padding: 16px;
-      }
+      .modal-overlay { align-items: center; padding: 16px; }
     }
-    .modal-box { 
-      background: white; 
-      width: 100%; 
-      max-width: 720px; 
-      max-height: 88vh; 
-      border-top-left-radius: 20px; 
-      border-top-right-radius: 20px; 
-      overflow: hidden; 
-      display: flex; 
-      flex-direction: column; 
-      box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.2); 
+    .modal-box {
+      background: var(--card-bg);
+      color: var(--text);
+      width: 100%;
+      max-width: 720px;
+      max-height: 88vh;
+      border-top-left-radius: 20px;
+      border-top-right-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.2);
       animation: slideUp 0.25s ease-out;
     }
     @media (min-width: 640px) {
@@ -475,69 +598,79 @@
         animation: fadeIn 0.2s ease-out;
       }
     }
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    .modal-header {
+      padding: 14px 18px;
+      background: var(--header-bg);
+      color: var(--header-text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: scale(0.96); }
-      to { opacity: 1; transform: scale(1); }
-    }
-    .modal-header { 
-      padding: 14px 18px; 
-      background: var(--primary-dark); 
-      color: white; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-    }
-    .modal-body { 
-      padding: 16px 18px; 
-      overflow-y: auto; 
-      flex: 1; 
-      background: #f8fafc; 
+    .modal-body {
+      padding: 16px 18px;
+      overflow-y: auto;
+      flex: 1;
+      background: var(--bg);
       -webkit-overflow-scrolling: touch;
     }
-    .modal-footer { 
-      padding: 12px 18px; 
-      background: white; 
-      border-top: 1px solid var(--border); 
-      display: flex; 
-      justify-content: flex-end; 
-      gap: 8px; 
+    .modal-footer {
+      padding: 12px 18px;
+      background: var(--card-bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
     }
 
     .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 5px; }
-    .form-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; outline: none; background: white; }
-    .form-input:focus { border-color: var(--accent); }
-    .form-textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; outline: none; line-height: 1.45; resize: vertical; background: white; }
-    .form-textarea:focus { border-color: var(--accent); }
+    .form-group label { display: block; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-bottom: 5px; }
+    .form-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; outline: none; background: var(--card-bg); color: var(--text); }
+    .form-input:focus { border-color: var(--np-green); }
+    .form-textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; outline: none; line-height: 1.45; resize: vertical; background: var(--card-bg); color: var(--text); }
+    .form-textarea:focus { border-color: var(--np-green); }
   </style>
 </head>
 <body>
 
-  <!-- 상단 모바일 헤더 -->
-  <div class="header">
-    <div class="header-title">
-      <span>🚜</span>
+  <!-- 🟢 상단 네이버페이 헤더 -->
+  <div class="np-header">
+    <div class="np-header-brand">
+      <span class="np-badge-n">N</span>
       <span>볼보 진단 매뉴얼</span>
     </div>
-    <div class="header-links">
-      <div class="live-indicator"><span class="live-dot"></span><span>Turso</span></div>
-      <a href="upload.html" class="header-btn">📤 업로더</a>
+    <div class="np-header-right">
+      <a href="upload.html" class="np-btn-uploader">📤 업로더</a>
     </div>
   </div>
 
+  <!-- 🎛️ 뷰 모드 및 야간 모드 전환 바 -->
+  <div class="mode-switch-container">
+    <div class="segment-tabs">
+      <button class="seg-tab active" id="tabCardView" onclick="setViewMode('card')">
+        <span>📱 스마트 카드</span>
+      </button>
+      <button class="seg-tab" id="tabTableView" onclick="setViewMode('table')">
+        <span>📄 원본 OEM 표</span>
+      </button>
+    </div>
+
+    <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleDarkMode()">
+      <span id="themeIcon">🌙</span>
+      <span id="themeText">야간 모드</span>
+    </button>
+  </div>
+
   <div class="container">
-    <!-- 모바일 친화적 검색 및 필터 영역 -->
+    <!-- 🔍 상단 고정형 네이버페이 검색 영역 -->
     <div class="search-sticky-wrap">
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
+      <div class="np-search-box">
+        <span class="np-search-icon">🔍</span>
         <input 
           type="search" 
           id="searchInput" 
-          class="search-input" 
+          class="np-search-input" 
           placeholder="고장코드(SE2701, 111-1), 기종(EW145, EC300)..." 
           autocomplete="off" 
           autocapitalize="off"
@@ -547,20 +680,21 @@
         <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
       </div>
 
-      <!-- 모바일 원터치 빠른 기종/코드 필터 칩 -->
+      <!-- 🏷️ 네이버페이 스타일 퀵 필터 칩 -->
       <div class="chips-scroll-wrap">
-        <button class="chip" onclick="quickSearch('EW145')">🚜 EW145</button>
-        <button class="chip" onclick="quickSearch('EC300')">🚜 EC300</button>
-        <button class="chip" onclick="quickSearch('EC210')">🚜 EC210</button>
-        <button class="chip" onclick="quickSearch('EC480')">🚜 EC480</button>
-        <button class="chip" onclick="quickSearch('SE2701')">⚡ SE2701</button>
-        <button class="chip" onclick="quickSearch('MID 128')">📟 MID 128</button>
-        <button class="chip" onclick="quickSearch('111-')">🔧 111-</button>
-        <button class="chip" onclick="quickSearch('센서')">📡 센서</button>
+        <button class="np-chip" onclick="quickSearch('EW145')">🚜 EW145</button>
+        <button class="np-chip" onclick="quickSearch('EC300')">🚜 EC300</button>
+        <button class="np-chip" onclick="quickSearch('EC210')">🚜 EC210</button>
+        <button class="np-chip" onclick="quickSearch('EC480')">🚜 EC480</button>
+        <button class="np-chip" onclick="quickSearch('SE2701')">⚡ SE2701</button>
+        <button class="np-chip" onclick="quickSearch('MID 128')">📟 MID 128</button>
+        <button class="np-chip" onclick="quickSearch('111-')">🔧 111-</button>
+        <button class="np-chip" onclick="quickSearch('센서')">📡 센서</button>
+        <button class="np-chip" onclick="quickSearch('압력')">🎛️ 압력</button>
       </div>
     </div>
 
-    <!-- 상태 및 카운트 -->
+    <!-- 상태 표시줄 -->
     <div class="status-bar" id="status">
       <span>💡 검색어를 입력하거나 위 칩을 터치하세요.</span>
     </div>
@@ -569,7 +703,7 @@
     <div id="results">
       <div class="empty-state">
         <div class="empty-state-icon">📱</div>
-        <div class="empty-state-title">모바일 현장 검색 지원</div>
+        <div class="empty-state-title">네이버페이 스타일 모바일 뷰어</div>
         <div class="empty-state-desc">
           상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
           굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.
@@ -587,8 +721,8 @@
       </div>
       <div class="modal-body" id="editModalBody"></div>
       <div class="modal-footer">
-        <button class="btn-action" style="padding:10px 16px; font-size:13px;" onclick="closeEditModal()">취소</button>
-        <button class="btn-action btn-edit" style="padding:10px 16px; font-size:13px; background:var(--accent); color:white;" onclick="saveEditedRecord()">💾 저장하기</button>
+        <button class="np-action-btn" style="padding:10px 16px; font-size:13px;" onclick="closeEditModal()">취소</button>
+        <button class="np-action-btn" style="padding:10px 16px; font-size:13px; background:var(--np-green); color:white; border-color:var(--np-green);" onclick="saveEditedRecord()">💾 저장하기</button>
       </div>
     </div>
   </div>
@@ -604,7 +738,62 @@
     let currentSearchResults = [];
     let editingUniqueId = null;
 
-    // 플로팅 스크롤 버튼 제어
+    // 현재 뷰 모드 ('card' | 'table') 및 테마 ('naver' | 'dark')
+    let currentViewMode = localStorage.getItem('volvo_view_mode') || 'card';
+    let currentTheme = localStorage.getItem('volvo_theme') || 'naver';
+
+    // 초기화
+    document.addEventListener('DOMContentLoaded', () => {
+      applyTheme(currentTheme);
+      applyViewMode(currentViewMode);
+    });
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      localStorage.setItem('volvo_view_mode', mode);
+      applyViewMode(mode);
+      const q = document.getElementById('searchInput').value.trim();
+      if (currentSearchResults.length > 0) {
+        renderCards(currentSearchResults, q);
+      }
+    }
+
+    function applyViewMode(mode) {
+      document.documentElement.setAttribute('data-view', mode);
+      if (mode === 'card') {
+        document.getElementById('tabCardView').classList.add('active');
+        document.getElementById('tabTableView').classList.remove('active');
+      } else {
+        document.getElementById('tabTableView').classList.add('active');
+        document.getElementById('tabCardView').classList.remove('active');
+      }
+    }
+
+    function toggleDarkMode() {
+      const newTheme = currentTheme === 'dark' ? 'naver' : 'dark';
+      currentTheme = newTheme;
+      localStorage.setItem('volvo_theme', newTheme);
+      applyTheme(newTheme);
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const meta = document.getElementById('metaThemeColor');
+      const icon = document.getElementById('themeIcon');
+      const text = document.getElementById('themeText');
+
+      if (theme === 'dark') {
+        meta.setAttribute('content', '#181b20');
+        icon.innerText = '☀️';
+        text.innerText = '주간 모드';
+      } else {
+        meta.setAttribute('content', '#03c75a');
+        icon.innerText = '🌙';
+        text.innerText = '야간 모드';
+      }
+    }
+
+    // 플로팅 스크롤 버튼
     window.addEventListener('scroll', () => {
       const btn = document.getElementById('scrollTopBtn');
       if (window.scrollY > 250) {
@@ -638,7 +827,7 @@
       document.getElementById('results').innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">📱</div>
-          <div class="empty-state-title">모바일 현장 검색 지원</div>
+          <div class="empty-state-title">네이버페이 스타일 모바일 뷰어</div>
           <div class="empty-state-desc">
             상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
             굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.
@@ -672,7 +861,7 @@
         const sql = `
           SELECT unique_id, dtc, model_name, doc_type, ecu, comp_name, content_json FROM diagnostics 
           WHERE dtc LIKE ? OR dtc LIKE ? OR model_name LIKE ? OR comp_name LIKE ? OR search_text LIKE ? OR search_text LIKE ?
-          LIMIT 20;
+          LIMIT 25;
         `;
         const payload = {
           requests: [{
@@ -715,7 +904,7 @@
         statusEl.innerHTML = `<span>검색 결과 <b>${items.length}</b>건</span><span>응답 <b>${elapsed}ms</b></span>`;
         renderCards(items, q);
       } catch (e) {
-        statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ 검색 오류: ${e.message}</span>`;
+        statusEl.innerHTML = `<span style="color:var(--np-red)">⚠️ 검색 오류: ${e.message}</span>`;
       }
     }
 
@@ -894,8 +1083,8 @@
           specTableHtml += `
             <div class="oem-tbl-wrap">
               <table class="oem-tbl">
-                <tr><th colspan="4" style="background:#e2e8f0;">⚙️ 옵션 / 구성 유효 범위</th></tr>
-                <tr style="background:#f8fafc; font-weight:bold;">
+                <tr><th colspan="4" style="background:var(--box-inner-bg);">⚙️ 옵션 / 구성 유효 범위</th></tr>
+                <tr style="font-weight:bold;">
                   <td>모델 종류</td><td>옵션 번호</td><td>옵션명</td><td>구성</td>
                 </tr>
                 ${specs.options.map(o => `
@@ -915,8 +1104,8 @@
           specTableHtml += `
             <div class="oem-tbl-wrap">
               <table class="oem-tbl">
-                <tr><th colspan="4" style="background:#e2e8f0;">🔢 일련 번호 유효 범위</th></tr>
-                <tr style="background:#f8fafc; font-weight:bold;">
+                <tr><th colspan="4" style="background:var(--box-inner-bg);">🔢 일련 번호 유효 범위</th></tr>
+                <tr style="font-weight:bold;">
                   <td>모델 종류</td><td>생산 사업장</td><td>시작 S/N</td><td>종료 S/N</td>
                 </tr>
                 ${specs.serials.map(s => `
@@ -953,158 +1142,240 @@
           const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
           return parts.map(p => {
             let formatted = highlight(p, keyword);
-            formatted = formatted.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="javascript:void(0)" onclick="quickSearch(\'$1\')" style="color:#0284c7; font-weight:bold; text-decoration:underline;">$1</a>');
+            formatted = formatted.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="javascript:void(0)" onclick="quickSearch(\'$1\')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">$1</a>');
             return `<div class="bullet-item"><span class="bullet-icon">🔧</span><span>${formatted}</span></div>`;
           }).join('');
         };
 
         const renderSaeActions = (rawActions, defaultDtc) => {
           if (!rawActions || rawActions === '없음' || rawActions === '-') {
-            return `<a href="javascript:void(0)" onclick="quickSearch('${defaultDtc}')" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
+            return `<a href="javascript:void(0)" onclick="quickSearch('${defaultDtc}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
           }
           const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
           return parts.map(p => {
             let itemHtml = highlight(p, keyword);
-            itemHtml = itemHtml.replace(/(\b\d{3}\s*(?:PID|PPID|SID|PSID)\d+\b|\bMID\d+\b|\bSE\d+\b)/gi, '<a href="javascript:void(0)" onclick="quickSearch(\'$1\')" style="color:#0284c7; font-weight:bold; text-decoration:underline;">$1</a>');
+            itemHtml = itemHtml.replace(/(\b\d{3}\s*(?:PID|PPID|SID|PSID)\d+\b|\bMID\d+\b|\bSE\d+\b)/gi, '<a href="javascript:void(0)" onclick="quickSearch(\'$1\')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">$1</a>');
             return `<div class="bullet-item"><span class="bullet-icon">🔧</span><span>${itemHtml}</span></div>`;
           }).join('');
         };
 
         const div = document.createElement('div');
-        div.className = 'card';
+        div.className = 'np-card';
 
-        const cardHeaderHtml = `
-          <div class="card-header">
-            <div class="card-badges">
-              <span class="${isSae ? 'badge-sae-dtc' : 'badge-dtc'}">${d.dtc}</span>
-              <span class="badge-model-tag">🚜 ${d.model_name || 'Volvo'}</span>
-              <span class="card-comp-name">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</span>
+        const cardTopHtml = `
+          <div class="np-card-top">
+            <div class="np-card-header-left">
+              <span class="${isSae ? 'badge-sae-np' : 'badge-dtc-np'}">${d.dtc}</span>
+              <span class="badge-model-np">🚜 ${d.model_name || 'Volvo'}</span>
+              <span class="np-comp-title">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</span>
             </div>
-            <div class="card-actions">
-              <button class="btn-action btn-copy" onclick="copyCard('${d.dtc}', '${d.model_name}')">📋 복사</button>
-              <button class="btn-action btn-edit" onclick="openEditModal('${d.unique_id}')">✏️ 수정</button>
-              <button class="btn-action btn-delete" onclick="deleteRecord('${d.unique_id}', '${d.dtc}', '${d.model_name}')">🗑️ 삭제</button>
+            <div class="np-card-actions">
+              <button class="np-action-btn" onclick="copyCard('${d.dtc}', '${d.model_name}')">📋 복사</button>
+              <button class="np-action-btn np-action-edit" onclick="openEditModal('${d.unique_id}')">✏️ 수정</button>
+              <button class="np-action-btn np-action-delete" onclick="deleteRecord('${d.unique_id}', '${d.dtc}', '${d.model_name}')">🗑️ 삭제</button>
             </div>
           </div>
         `;
 
-        if (isSae) {
-          const fmiList = content.fmiList || [];
-          let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:800; margin: 14px 0 8px; color:#1e293b;">⚡ 고장 모드 진단 (FMI)</h3>';
+        if (currentViewMode === 'table') {
+          // ==========================================
+          // 📄 [모드 2] 원래 처음 모드 (OEM 원본 표 모드)
+          // ==========================================
+          if (isSae) {
+            const fmiList = content.fmiList || [];
+            let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:bold; margin: 12px 0 6px;">고장 모드 진단</h3>';
+            fmiList.forEach(f => {
+              const condText = (f.cond && f.cond !== '-' && f.cond !== '없음') ? highlight(f.cond, keyword) : '';
+              fmiBlocksHtml += `
+                <table class="oem-tbl" style="margin-bottom:14px;">
+                  <tr>
+                    <th style="width:24%; vertical-align:top;" rowspan="3">
+                      고장 모드<br>
+                      <span style="font-size:14px; color:var(--np-orange);">FMI ${f.fmi}</span>
+                    </th>
+                    <td colspan="2" style="font-weight:bold;">
+                      탐지 조건: <span style="font-weight:normal;">${condText}</span>
+                    </td>
+                  </tr>
+                  <tr style="font-weight:bold; background:var(--box-inner-bg);">
+                    <td style="width:38%;">증상:</td>
+                    <td style="width:38%;">가능한 이유:</td>
+                  </tr>
+                  <tr>
+                    <td style="vertical-align:top;">${renderBullets(f.symptom)}</td>
+                    <td style="vertical-align:top;">${renderBullets(f.causes)}</td>
+                  </tr>
+                  <tr>
+                    <th style="vertical-align:top;">조치</th>
+                    <td colspan="2" style="vertical-align:top;">${renderSaeActions(f.actions, d.dtc)}</td>
+                  </tr>
+                </table>
+              `;
+            });
 
-          fmiList.forEach(f => {
-            const condText = (f.cond && f.cond !== '-' && f.cond !== '없음') ? highlight(f.cond, keyword) : '';
-            fmiBlocksHtml += `
-              <div class="fmi-card">
-                <div class="fmi-header">
-                  <span>🚨 고장 모드: FMI ${f.fmi}</span>
-                  ${condText ? `<span style="font-size:11.5px; font-weight:normal; background:rgba(0,0,0,0.06); padding:2px 6px; border-radius:4px;">탐지: ${condText}</span>` : ''}
-                </div>
-                <div class="fmi-body">
-                  <div style="margin-bottom:8px;">
-                    <div style="font-size:11.5px; font-weight:800; color:#d97706; margin-bottom:3px;">증상:</div>
-                    ${renderBullets(f.symptom)}
-                  </div>
-                  <div style="margin-bottom:8px;">
-                    <div style="font-size:11.5px; font-weight:800; color:#dc2626; margin-bottom:3px;">가능한 이유:</div>
-                    ${renderBullets(f.causes)}
-                  </div>
-                  <div>
-                    <div style="font-size:11.5px; font-weight:800; color:#0284c7; margin-bottom:3px;">조치 내용:</div>
-                    ${renderSaeActions(f.actions, d.dtc)}
-                  </div>
-                </div>
+            div.innerHTML = `
+              ${cardTopHtml}
+              <div class="oem-sheet">
+                <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+                ${specTableHtml}
+                <table class="oem-tbl" style="margin-bottom:14px;">
+                  <tr><th colspan="2">SAE 코드</th></tr>
+                  <tr><th style="width:24%;">MID/컨트롤 유니트</th><td>${highlight(content.ecu || d.ecu, keyword)}</td></tr>
+                  <tr><th>PID/PPID/SID/PSID</th><td><b>${highlight(content.paramName || d.comp_name, keyword)}</b></td></tr>
+                  <tr><th colspan="2">장비 디스플레이 메시지</th></tr>
+                  <tr><th>텍스트 프레젠테이션</th><td>${highlight(content.displayMsg || '-', keyword)}</td></tr>
+                  <tr><th>기준</th><td><a href="javascript:void(0)" onclick="quickSearch('${content.standard}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${highlight(content.standard || '', keyword)}</a></td></tr>
+                </table>
+                ${fmiBlocksHtml}
               </div>
             `;
-          });
-
-          div.innerHTML = `
-            ${cardHeaderHtml}
-            <div class="oem-sheet">
-              <div class="oem-title">${highlight(d.dtc, keyword)}</div>
-              
-              <div class="info-card-group">
-                <div class="info-box blue-accent">
-                  <div class="info-label">📟 컨트롤 유니트 / 파라미터</div>
-                  <div class="info-value">
-                    <b>${highlight(content.ecu || d.ecu, keyword)}</b> 
-                    ${content.paramName ? ` / <b>${highlight(content.paramName, keyword)}</b>` : ''}
-                  </div>
-                </div>
-                ${content.displayMsg ? `
-                  <div class="info-box warn-accent">
-                    <div class="info-label">🖥️ 장비 디스플레이 메시지</div>
-                    <div class="info-value">${highlight(content.displayMsg, keyword)}</div>
-                  </div>
-                ` : ''}
-                ${content.standard ? `
-                  <div class="info-box">
-                    <div class="info-label">📐 기준</div>
-                    <div class="info-value"><a href="javascript:void(0)" onclick="quickSearch('${content.standard}')" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(content.standard, keyword)}</a></div>
-                  </div>
-                ` : ''}
+          } else {
+            div.innerHTML = `
+              ${cardTopHtml}
+              <div class="oem-sheet">
+                <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+                ${specTableHtml}
+                <table class="oem-tbl" style="margin-bottom:14px;">
+                  <tr><th colspan="2">ISO DTC 코드</th></tr>
+                  <tr><th style="width:24%;">컨트롤 유니트</th><td>${highlight(content.ecu || d.ecu, keyword)}</td></tr>
+                  <tr><th>DTC 코드, 시스템/구성부품, 고장 유형</th><td><b>${highlight(content.compFull || d.comp_name, keyword)}</b></td></tr>
+                  <tr><th>기준</th><td>${highlight(content.standard || '', keyword)}</td></tr>
+                </table>
+                <table class="oem-tbl">
+                  <tr><th style="width:24%;">고장 이벤트</th><td>${renderEvent(content.event)}</td></tr>
+                  <tr><th>증상</th><td>${renderBullets(content.symptom)}</td></tr>
+                  <tr><th>조건</th><td>${renderBullets(content.condition)}</td></tr>
+                  <tr><th>선행조치 DTC</th><td>${renderBullets(content.preDtc)}</td></tr>
+                  <tr><th>가능한 이유</th><td>${renderBullets(content.causes)}</td></tr>
+                  <tr><th>조치</th><td>${renderActions(content.actions, d.dtc)}</td></tr>
+                </table>
               </div>
-
-              ${specTableHtml}
-              ${fmiBlocksHtml}
-            </div>
-          `;
+            `;
+          }
         } else {
-          div.innerHTML = `
-            ${cardHeaderHtml}
-            <div class="oem-sheet">
-              <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+          // ==========================================
+          // 📱 [모드 1 & 3] 네이버페이 스마트 카드 뷰
+          // ==========================================
+          if (isSae) {
+            const fmiList = content.fmiList || [];
+            let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:800; margin: 14px 0 8px; color:var(--text);">⚡ 고장 모드 진단 (FMI)</h3>';
 
-              <div class="info-card-group">
-                <div class="info-box blue-accent">
-                  <div class="info-label">📟 컨트롤 유니트 (ECU)</div>
-                  <div class="info-value"><b>${highlight(content.ecu || d.ecu, keyword)}</b></div>
+            fmiList.forEach(f => {
+              const condText = (f.cond && f.cond !== '-' && f.cond !== '없음') ? highlight(f.cond, keyword) : '';
+              fmiBlocksHtml += `
+                <div class="np-fmi-box">
+                  <div class="np-fmi-top">
+                    <span>🚨 고장 모드: FMI ${f.fmi}</span>
+                    ${condText ? `<span style="font-size:11.5px; font-weight:normal; background:rgba(0,0,0,0.06); padding:2px 7px; border-radius:4px;">탐지: ${condText}</span>` : ''}
+                  </div>
+                  <div class="np-fmi-body">
+                    <div>
+                      <div class="np-tile-label" style="color:var(--np-orange);">🚨 발생 증상</div>
+                      <div class="np-tile-body">${renderBullets(f.symptom)}</div>
+                    </div>
+                    <div>
+                      <div class="np-tile-label" style="color:var(--np-red);">❓ 가능한 이유</div>
+                      <div class="np-tile-body">${renderBullets(f.causes)}</div>
+                    </div>
+                    <div>
+                      <div class="np-tile-label" style="color:var(--np-blue);">🛠️ 조치 내용</div>
+                      <div class="np-tile-body">${renderSaeActions(f.actions, d.dtc)}</div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            });
+
+            div.innerHTML = `
+              ${cardTopHtml}
+              <div class="np-card-content">
+                <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
+                
+                <div class="np-info-section">
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">📟 컨트롤 유니트 / 파라미터</div>
+                    <div class="np-tile-body">
+                      <b>${highlight(content.ecu || d.ecu, keyword)}</b> 
+                      ${content.paramName ? ` / <b>${highlight(content.paramName, keyword)}</b>` : ''}
+                    </div>
+                  </div>
+
+                  ${content.displayMsg ? `
+                    <div class="np-info-tile warn-tile">
+                      <div class="np-tile-label">🖥️ 장비 디스플레이 메시지</div>
+                      <div class="np-tile-body">${highlight(content.displayMsg, keyword)}</div>
+                    </div>
+                  ` : ''}
+
+                  ${content.standard ? `
+                    <div class="np-info-tile">
+                      <div class="np-tile-label">📐 기준</div>
+                      <div class="np-tile-body"><a href="javascript:void(0)" onclick="quickSearch('${content.standard}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${highlight(content.standard, keyword)}</a></div>
+                    </div>
+                  ` : ''}
                 </div>
 
-                <div class="info-box">
-                  <div class="info-label">🔍 시스템 / 구성부품 / 고장 유형</div>
-                  <div class="info-value"><b>${highlight(content.compFull || d.comp_name, keyword)}</b></div>
-                </div>
-
-                ${content.standard ? `
-                  <div class="info-box">
-                    <div class="info-label">📐 기준</div>
-                    <div class="info-value">${highlight(content.standard, keyword)}</div>
-                  </div>
-                ` : ''}
-
-                ${content.event && content.event !== '-' && content.event !== '없음' ? `
-                  <div class="info-box warn-accent">
-                    <div class="info-label">⚠️ 고장 이벤트</div>
-                    <div class="info-value">${renderEvent(content.event)}</div>
-                  </div>
-                ` : ''}
-
-                ${content.symptom && content.symptom !== '-' && content.symptom !== '없음' ? `
-                  <div class="info-box danger-accent">
-                    <div class="info-label">🚨 발생 증상</div>
-                    <div class="info-value">${renderBullets(content.symptom)}</div>
-                  </div>
-                ` : ''}
-
-                ${content.causes && content.causes !== '-' && content.causes !== '없음' ? `
-                  <div class="info-box">
-                    <div class="info-label">❓ 가능한 이유</div>
-                    <div class="info-value">${renderBullets(content.causes)}</div>
-                  </div>
-                ` : ''}
-
-                ${content.actions && content.actions !== '-' && content.actions !== '없음' ? `
-                  <div class="info-box blue-accent" style="border-left: 4px solid var(--accent);">
-                    <div class="info-label">🛠️ 조치 및 해결 방법</div>
-                    <div class="info-value">${renderActions(content.actions, d.dtc)}</div>
-                  </div>
-                ` : ''}
+                ${specTableHtml}
+                ${fmiBlocksHtml}
               </div>
+            `;
+          } else {
+            div.innerHTML = `
+              ${cardTopHtml}
+              <div class="np-card-content">
+                <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
 
-              ${specTableHtml}
-            </div>
-          `;
+                <div class="np-info-section">
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">📟 컨트롤 유니트 (ECU)</div>
+                    <div class="np-tile-body"><b>${highlight(content.ecu || d.ecu, keyword)}</b></div>
+                  </div>
+
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">🔍 시스템 / 구성부품 / 고장 유형</div>
+                    <div class="np-tile-body"><b>${highlight(content.compFull || d.comp_name, keyword)}</b></div>
+                  </div>
+
+                  ${content.standard ? `
+                    <div class="np-info-tile">
+                      <div class="np-tile-label">📐 기준</div>
+                      <div class="np-tile-body">${highlight(content.standard, keyword)}</div>
+                    </div>
+                  ` : ''}
+
+                  ${content.event && content.event !== '-' && content.event !== '없음' ? `
+                    <div class="np-info-tile warn-tile">
+                      <div class="np-tile-label">⚠️ 고장 이벤트</div>
+                      <div class="np-tile-body">${renderEvent(content.event)}</div>
+                    </div>
+                  ` : ''}
+
+                  ${content.symptom && content.symptom !== '-' && content.symptom !== '없음' ? `
+                    <div class="np-info-tile danger-tile">
+                      <div class="np-tile-label">🚨 발생 증상</div>
+                      <div class="np-tile-body">${renderBullets(content.symptom)}</div>
+                    </div>
+                  ` : ''}
+
+                  ${content.causes && content.causes !== '-' && content.causes !== '없음' ? `
+                    <div class="np-info-tile">
+                      <div class="np-tile-label">❓ 가능한 이유</div>
+                      <div class="np-tile-body">${renderBullets(content.causes)}</div>
+                    </div>
+                  ` : ''}
+
+                  ${content.actions && content.actions !== '-' && content.actions !== '없음' ? `
+                    <div class="np-info-tile action-tile">
+                      <div class="np-tile-label">🛠️ 조치 및 해결 방법</div>
+                      <div class="np-tile-body">${renderActions(content.actions, d.dtc)}</div>
+                    </div>
+                  ` : ''}
+                </div>
+
+                ${specTableHtml}
+              </div>
+            `;
+          }
         }
 
         box.appendChild(div);
