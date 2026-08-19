@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>볼보 진단 매뉴얼 - 웹 업로더 & 중복 관리</title>
+  <title>볼보 진단 매뉴얼 - 스마트 비교 & 업로더</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
@@ -12,6 +12,7 @@
       --success: #16a34a;
       --warning: #d97706;
       --danger: #dc2626;
+      --purple: #7c3aed;
       --bg: #f8fafc;
       --border: #cbd5e1;
     }
@@ -20,53 +21,77 @@
     
     .header { background: var(--primary); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; }
     .header a { color: #93c5fd; text-decoration: none; font-size: 13px; font-weight: bold; }
-    .container { max-width: 1000px; margin: 20px auto; padding: 0 16px; }
+    .container { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
 
-    .drop-zone { border: 2.5px dashed var(--accent); background: #f0f9ff; border-radius: 12px; padding: 36px 20px; text-align: center; cursor: pointer; transition: 0.2s; }
+    .drop-zone { border: 2.5px dashed var(--accent); background: #f0f9ff; border-radius: 12px; padding: 32px 20px; text-align: center; cursor: pointer; transition: 0.2s; }
     .drop-zone:hover, .drop-zone.dragover { background: #e0f2fe; border-color: #0369a1; }
     .drop-zone h3 { font-size: 18px; color: #0369a1; margin-bottom: 6px; }
     .drop-zone p { font-size: 13px; color: #64748b; }
 
-    .summary-box { display: flex; gap: 12px; margin: 20px 0; }
-    .summary-card { flex: 1; background: white; border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-align: center; }
-    .summary-card b { font-size: 20px; display: block; margin-top: 4px; }
+    /* 대시보드 */
+    .summary-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+    .summary-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
+    .summary-card b { font-size: 18px; display: block; margin-top: 4px; }
     .card-new { border-left: 5px solid var(--success); color: var(--success); }
-    .card-dup { border-left: 5px solid var(--warning); color: var(--warning); }
-    .card-total { border-left: 5px solid var(--accent); color: var(--accent); }
+    .card-err { border-left: 5px solid var(--purple); color: var(--purple); }
+    .card-mod { border-left: 5px solid var(--warning); color: var(--warning); }
+    .card-same { border-left: 5px solid #64748b; color: #64748b; }
 
+    /* 툴바 */
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .btn { padding: 10px 18px; border-radius: 8px; font-weight: bold; font-size: 14px; cursor: pointer; border: none; transition: 0.15s; }
+    .btn { padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; border: none; transition: 0.15s; }
     .btn-upload { background: var(--accent); color: white; }
     .btn-upload:hover { background: #0369a1; }
     .btn-upload:disabled { background: #94a3b8; cursor: not-allowed; }
     .btn-clear { background: #e2e8f0; color: #475569; }
 
+    /* 테이블 */
     .tbl-container { background: white; border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
     th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
     th { background: #f1f5f9; font-weight: bold; color: #475569; }
     
-    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; }
+    .badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-weight: bold; font-size: 11px; white-space: nowrap; }
     .badge-new { background: #dcfce7; color: #15803d; }
-    .badge-dup { background: #fef3c7; color: #b45309; }
-    .badge-iso { background: #e0f2fe; color: #0369a1; }
-    .badge-sae { background: #ffedd5; color: #c2410c; }
+    .badge-err { background: #f3e8ff; color: #7e22ce; border: 1px solid #d8b4fe; }
+    .badge-mod { background: #fef3c7; color: #b45309; }
+    .badge-same { background: #f1f5f9; color: #64748b; }
+
+    .btn-diff { background: #f8fafc; border: 1px solid #cbd5e1; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; }
+    .btn-diff:hover { background: #e2e8f0; }
 
     .progress-wrap { display: none; margin-top: 14px; background: #e2e8f0; border-radius: 8px; height: 16px; overflow: hidden; }
     .progress-bar { height: 100%; width: 0%; background: var(--success); transition: width 0.2s; }
+
+    /* 1:1 비교 & 수정 모달 */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+    .modal-box { background: white; width: 100%; max-width: 960px; max-height: 90vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+    .modal-header { padding: 14px 20px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; }
+    .modal-footer { padding: 12px 20px; background: #f8fafc; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+    .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .diff-col { background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border); }
+    .diff-col h4 { margin-bottom: 10px; font-size: 14px; padding-bottom: 6px; border-bottom: 2px solid #cbd5e1; }
+    .field-group { margin-bottom: 12px; }
+    .field-group label { font-size: 11px; font-weight: bold; color: #64748b; display: block; margin-bottom: 3px; }
+    .field-old-val { font-size: 12.5px; padding: 6px 8px; background: #fee2e2; border-radius: 4px; border: 1px solid #fca5a5; line-height: 1.4; word-break: break-all; }
+    .field-input { width: 100%; padding: 6px 8px; font-size: 12.5px; border: 1px solid var(--border); border-radius: 4px; background: white; outline: none; }
+    .field-input:focus { border-color: var(--accent); }
+    .is-different { border-color: #f59e0b; background: #fffbeb; }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <h2>🚜 볼보 진단서 PDF 웹 업로더 (스마트 파서)</h2>
+    <h2>🚜 볼보 진단서 스마트 비교 & 업로더</h2>
     <a href="index.html">🔍 검색 뷰어로 이동 ➔</a>
   </div>
 
   <div class="container">
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
-      <h3>📁 PDF 파일을 여기에 끌어다 놓거나 클릭하여 선택</h3>
-      <p>볼보 진단 매뉴얼 PDF 파일들을 여러 개 동시에 선택할 수 있습니다.</p>
+      <h3>📁 PDF 파일을 끌어다 놓거나 클릭하여 선택</h3>
+      <p>기존 DB 데이터와 자동 비교하여 <b>[오류 수정] / [내용 변경] / [동일 항목]</b>을 자동 판별합니다.</p>
       <input type="file" id="fileInput" multiple accept=".pdf" style="display:none;" onchange="handleFiles(this.files)">
     </div>
 
@@ -74,40 +99,64 @@
       <div class="progress-bar" id="progressBar"></div>
     </div>
 
+    <!-- 4단계 분류 대시보드 -->
     <div class="summary-box" id="summaryBox" style="display:none;">
-      <div class="summary-card card-total">대기 중 파일<b id="cntTotal">0개</b></div>
-      <div class="summary-card card-new">신규 고장코드<b id="cntNew">0개</b></div>
-      <div class="summary-card card-dup">중복(기존 존재)<b id="cntDup">0개</b></div>
+      <div class="summary-card card-new">신규 고장코드<b id="cntNew">0</b></div>
+      <div class="summary-card card-err">기존 오류 감지 (정정 대상)<b id="cntErr">0</b></div>
+      <div class="summary-card card-mod">내용 변경 / 개정판<b id="cntMod">0</b></div>
+      <div class="summary-card card-same">100% 동일 (패스 권장)<b id="cntSame">0</b></div>
     </div>
 
+    <!-- 액션 툴바 -->
     <div class="toolbar" id="toolbar" style="display:none;">
       <div>
-        <label><input type="checkbox" id="checkAll" checked onchange="toggleSelectAll(this.checked)"> 전체 선택</label>
+        <label><input type="checkbox" id="checkAll" onchange="toggleSelectAll(this.checked)"> 전체 선택/해제</label>
         <span id="selectedInfo" style="margin-left: 10px; font-size: 13px; color: #64748b;"></span>
       </div>
       <div>
         <button class="btn btn-clear" onclick="resetList()">목록 초기화</button>
-        <button class="btn btn-upload" id="uploadBtn" onclick="startUpload()">⚡ Turso DB로 업로드 실행</button>
+        <button class="btn btn-upload" id="uploadBtn" onclick="startUpload()">⚡ 선택 항목 DB 업데이트 실행</button>
       </div>
     </div>
 
+    <!-- 분석 및 비교 테이블 -->
     <div class="tbl-container" id="tblBox" style="display:none;">
       <table>
         <thead>
           <tr>
             <th style="width:40px;">선택</th>
-            <th>상태</th>
+            <th>지능형 상태 판별</th>
             <th>고장코드</th>
             <th>규격</th>
             <th>구성부품 / 고장유형</th>
-            <th>고장 이벤트</th>
-            <th>증상</th>
-            <th>가능한 이유</th>
+            <th>증상 (새 데이터)</th>
+            <th>가능한 이유 (새 데이터)</th>
+            <th>정밀 대조</th>
             <th>업로드 상태</th>
           </tr>
         </thead>
         <tbody id="fileListBody"></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- 1:1 Diff & Edit 모달 -->
+  <div class="modal-overlay" id="diffModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalTitle">고장코드 1:1 비교 및 수정</h3>
+        <button style="background:none; border:none; color:white; font-size:18px; cursor:pointer;" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:12.5px; color:#64748b; margin-bottom:14px;">
+          오른쪽 <b>[새 분석 데이터]</b>에서 내용을 직접 수정할 수 있습니다. 수정한 내용은 업로드 시 그대로 반영됩니다.
+        </p>
+        <div class="diff-grid" id="diffContainer"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-clear" onclick="closeModal()">닫기</button>
+        <button class="btn btn-upload" onclick="saveModalChanges()">수정 내용 적용</button>
+      </div>
     </div>
   </div>
 
@@ -118,6 +167,7 @@
     const TURSO_ADMIN_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODcwOTA3MDQsImlkIjoiMDFhMDE1M2QtNDAwMS03OWU4LTlmYWUtNWJmZDMyZjcyMGE3Iiwia2lkIjoicEo1RHFMd2V3dHJZLTBXWGNxRTd0cnVRNWxrWDlYOVFJNTYxZl9lSC1YTSIsInJpZCI6IjY1YmYwM2JjLTc1ZmEtNGQ1NC05MzY0LWFhNjYzNjRlNzZjNyJ9.O2P-wN5MFUe6jCbxxxSrvtMZt_MyTyavApqJ-2se7NwSgCbi1byQezjfr6Ba49TWcou0Cg4hBq1xUOg7DAVSBg";
 
     let parsedItems = [];
+    let currentEditIdx = null;
 
     const dropZone = document.getElementById('dropZone');
     ['dragenter', 'dragover'].forEach(e => dropZone.addEventListener(e, (evt) => { evt.preventDefault(); dropZone.classList.add('dragover'); }));
@@ -134,13 +184,11 @@
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        const pageText = textContent.items.map(item => item.str).join(" ");
-        fullText += pageText + "\n";
+        fullText += textContent.items.map(item => item.str).join(" ") + "\n";
       }
       return fullText;
     }
 
-    // 스마트 텍스트 파서
     function parseVolvoText(rawText, filename) {
       const clean = (t) => (t || "").replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
       const cleanBullets = (t) => {
@@ -154,7 +202,6 @@
 
       const isSae = /MID\s*\d+|PID\s*\d+|SID\s*\d+|FMI\s*\d+/i.test(rawText);
 
-      // 경계 섹션 추출 유틸리티
       function sliceSection(text, startPattern, nextPatterns) {
         const nextRegexStr = nextPatterns.join('|');
         const pattern = new RegExp(`${startPattern}[:\\s]*(.*?)(?=${nextRegexStr}|$)`, 'is');
@@ -180,7 +227,6 @@
         const dtcM = rawText.match(/([P|U|B|C][0-9A-Z]{5,7})/);
         const dtc = dtcM ? dtcM[1] : filename.replace(/\.pdf$/i, '');
 
-        // 볼보 ISO 키워드 순서별 정밀 분할
         const nextMarkers = [
           '컨트롤\\s*유니트',
           'DTC\\s*코드[\\s,]*시스템[\\s/]*구성부품[\\s,]*고장\\s*유형',
@@ -204,7 +250,6 @@
         let causesRaw = sliceSection(rawText, '가능한\\s*이유', nextMarkers.slice(8));
         let actionsRaw = sliceSection(rawText, '조치', ['Guided\\s*Diagnostics', '$']);
 
-        // 선행조치 DTC 코드만 정밀 추출
         let preDtcCodes = preDtcRaw.match(/([P|U|B|C][0-9A-Z]{5,7})/g);
         let preDtc = "없음";
         if (preDtcCodes) {
@@ -231,34 +276,33 @@
     async function handleFiles(files) {
       if (!files || files.length === 0) return;
 
-      document.getElementById('summaryBox').style.display = 'flex';
+      document.getElementById('summaryBox').style.display = 'grid';
       document.getElementById('toolbar').style.display = 'flex';
       document.getElementById('tblBox').style.display = 'block';
 
       const statusEl = document.getElementById('selectedInfo');
-      statusEl.innerText = "⏳ PDF 텍스트 정밀 분할 및 DB 중복 검사 중...";
+      statusEl.innerText = "⏳ DB 레코드와 1:1 비교 분석 중...";
 
       for (const file of files) {
         if (!file.name.toLowerCase().endsWith('.pdf')) continue;
         try {
           const text = await extractPdfText(file);
           const item = parseVolvoText(text, file.name);
-          item.selected = true;
-          item.status = "CHECKING";
           parsedItems.push(item);
         } catch (e) {
-          console.error("파일 파싱 실패:", file.name, e);
+          console.error("파일 분석 실패:", file.name, e);
         }
       }
 
-      await checkDuplicatesInTurso();
+      await checkAndDiffWithTurso();
       renderTable();
     }
 
-    async function checkDuplicatesInTurso() {
+    // Turso DB 데이터와 1:1 지능형 비교 엔진
+    async function checkAndDiffWithTurso() {
       if (parsedItems.length === 0) return;
       const dtcs = parsedItems.map(i => `'${i.dtc}'`).join(',');
-      const sql = `SELECT dtc, comp_name, created_at FROM diagnostics WHERE dtc IN (${dtcs});`;
+      const sql = `SELECT dtc, doc_type, ecu, comp_name, standard, event, symptom, condition, pre_dtc, causes, actions, display_msg FROM diagnostics WHERE dtc IN (${dtcs});`;
 
       try {
         const res = await fetch(`${TURSO_DB_URL}/v2/pipeline`, {
@@ -274,22 +318,51 @@
 
         const result = data.results[0]?.response?.result;
         if (result && result.rows) {
+          const cols = result.cols.map(c => c.name);
           result.rows.forEach(r => {
-            existingMap.set(r[0].value, { comp: r[1].value, created: r[2].value });
+            let obj = {};
+            r.forEach((cell, i) => { obj[cols[i]] = cell?.value ?? ""; });
+            existingMap.set(obj.dtc, obj);
           });
         }
 
         parsedItems.forEach(item => {
-          if (existingMap.has(item.dtc)) {
-            item.status = "DUPLICATE";
-            item.existingInfo = existingMap.get(item.dtc);
-          } else {
+          if (!existingMap.has(item.dtc)) {
+            // [1] 신규 등록
             item.status = "NEW";
+            item.selected = true;
+          } else {
+            const old = existingMap.get(item.dtc);
+            item.existingRecord = old;
+
+            // [2] 기존 DB 데이터의 오염/오류 여부 판별 (줄바꿈 깨짐, 필드 침범 등)
+            const isOldCorrupted = (
+              old.ecu.length > 70 ||
+              old.comp_name.includes('고장 이벤트') ||
+              old.comp_name.includes('증상') ||
+              (old.symptom === '없음' && item.symptom !== '없음') ||
+              (old.causes === '없음' && item.causes !== '없음')
+            );
+
+            // [3] 100% 동일 여부 확인
+            const keys = ['ecu', 'comp_name', 'event', 'symptom', 'condition', 'pre_dtc', 'causes', 'actions'];
+            const isIdentical = keys.every(k => (old[k] || '').trim() === (item[k] || '').trim());
+
+            if (isOldCorrupted) {
+              item.status = "ERROR_FIX"; // 기존 오류 감지 -> 자동 선택 (덮어쓰기 권장)
+              item.selected = true;
+            } else if (isIdentical) {
+              item.status = "IDENTICAL"; // 완전 동일 -> 자동 체크 해제
+              item.selected = false;
+            } else {
+              item.status = "MODIFIED";  // 내용 변경/개정판 -> 선택 유지
+              item.selected = true;
+            }
           }
         });
       } catch (e) {
-        console.error("DB 중복 조회 오류:", e);
-        parsedItems.forEach(i => { i.status = "NEW"; });
+        console.error("DB 비교 조회 실패:", e);
+        parsedItems.forEach(i => { i.status = "NEW"; i.selected = true; });
       }
     }
 
@@ -297,36 +370,42 @@
       const tbody = document.getElementById('fileListBody');
       tbody.innerHTML = '';
 
-      let cntNew = 0, cntDup = 0;
+      let cntNew = 0, cntErr = 0, cntMod = 0, cntSame = 0;
 
       parsedItems.forEach((item, idx) => {
         if (item.status === 'NEW') cntNew++;
-        if (item.status === 'DUPLICATE') cntDup++;
+        else if (item.status === 'ERROR_FIX') cntErr++;
+        else if (item.status === 'MODIFIED') cntMod++;
+        else if (item.status === 'IDENTICAL') cntSame++;
 
-        const isDup = item.status === 'DUPLICATE';
+        let statusBadge = '';
+        if (item.status === 'NEW') statusBadge = '<span class="badge badge-new">🟢 신규 등록</span>';
+        else if (item.status === 'ERROR_FIX') statusBadge = '<span class="badge badge-err">🛠️ 기존 오류 감지 (정정 권장)</span>';
+        else if (item.status === 'MODIFIED') statusBadge = '<span class="badge badge-mod">🔄 내용 변경 (개정판)</span>';
+        else if (item.status === 'IDENTICAL') statusBadge = '<span class="badge badge-same">⚪ 100% 동일 (패스)</span>';
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><input type="checkbox" ${item.selected ? 'checked' : ''} onchange="toggleItem(${idx}, this.checked)"></td>
-          <td>
-            ${isDup 
-              ? `<span class="badge badge-dup">⚠️ 중복 (덮어쓰기)</span>` 
-              : `<span class="badge badge-new">🟢 신규 등록</span>`}
-          </td>
+          <td>${statusBadge}</td>
           <td><b style="color:var(--danger); font-size:14px;">${item.dtc}</b></td>
-          <td><span class="badge ${item.doc_type === 'ISO' ? 'badge-iso' : 'badge-sae'}">${item.doc_type}</span></td>
+          <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${item.doc_type}</span></td>
           <td>${item.comp_name || '-'}</td>
-          <td>${item.event || '-'}</td>
           <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.symptom || '없음'}</td>
-          <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.causes || '없음'}</td>
+          <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.causes || '없음'}</td>
+          <td>
+            ${item.existingRecord ? `<button class="btn-diff" onclick="openDiffModal(${idx})">🔍 대조 / 수정</button>` : '-'}
+          </td>
           <td id="status_${idx}" style="font-weight:bold; color:#64748b;">대기 중</td>
         `;
         tbody.appendChild(tr);
       });
 
-      document.getElementById('cntTotal').innerText = `${parsedItems.length}개`;
-      document.getElementById('cntNew').innerText = `${cntNew}개`;
-      document.getElementById('cntDup').innerText = `${cntDup}개`;
-      document.getElementById('selectedInfo').innerText = `총 ${parsedItems.length}개 항목 분할 완료`;
+      document.getElementById('cntNew').innerText = cntNew;
+      document.getElementById('cntErr').innerText = cntErr;
+      document.getElementById('cntMod').innerText = cntMod;
+      document.getElementById('cntSame').innerText = cntSame;
+      document.getElementById('selectedInfo').innerText = `총 ${parsedItems.length}개 항목 분석 완료`;
     }
 
     function toggleSelectAll(checked) {
@@ -346,16 +425,89 @@
       document.getElementById('fileInput').value = '';
     }
 
+    // 1:1 Diff & Edit 모달 열기
+    function openDiffModal(idx) {
+      currentEditIdx = idx;
+      const item = parsedItems[idx];
+      const old = item.existingRecord || {};
+
+      document.getElementById('modalTitle').innerText = `[${item.dtc}] 데이터 1:1 정밀 대조 및 수정`;
+      const container = document.getElementById('diffContainer');
+      container.innerHTML = '';
+
+      const fields = [
+        { key: 'ecu', label: '컨트롤 유니트' },
+        { key: 'comp_name', label: 'DTC 코드 / 구성부품' },
+        { key: 'event', label: '고장 이벤트' },
+        { key: 'symptom', label: '증상' },
+        { key: 'condition', label: '조건' },
+        { key: 'pre_dtc', label: '선행조치 DTC' },
+        { key: 'causes', label: '가능한 이유' },
+        { key: 'actions', label: '조치 내용' }
+      ];
+
+      // 좌측: 기존 DB 데이터 / 우측: 새 데이터 (입력창)
+      let leftHtml = '<div class="diff-col"><h4 style="color:var(--danger);">⚠️ 기존 DB 저장 내용 (오류 가능성)</h4>';
+      let rightHtml = '<div class="diff-col"><h4 style="color:var(--accent);">✨ 새 PDF 분석 데이터 (직접 수정 가능)</h4>';
+
+      fields.forEach(f => {
+        const oldVal = old[f.key] || '없음';
+        const newVal = item[f.key] || '없음';
+        const isDiff = oldVal.trim() !== newVal.trim();
+
+        leftHtml += `
+          <div class="field-group">
+            <label>${f.label}</label>
+            <div class="field-old-val ${isDiff ? '' : 'style="background:#f1f5f9; border-color:#cbd5e1;"'}">${oldVal}</div>
+          </div>
+        `;
+
+        rightHtml += `
+          <div class="field-group">
+            <label>${f.label}</label>
+            <textarea id="edit_${f.key}" class="field-input ${isDiff ? 'is-different' : ''}" rows="${f.key === 'causes' || f.key === 'actions' ? 3 : 1}">${newVal}</textarea>
+          </div>
+        `;
+      });
+
+      leftHtml += '</div>';
+      rightHtml += '</div>';
+
+      container.innerHTML = leftHtml + rightHtml;
+      document.getElementById('diffModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('diffModal').style.display = 'none';
+      currentEditIdx = null;
+    }
+
+    function saveModalChanges() {
+      if (currentEditIdx === null) return;
+      const item = parsedItems[currentEditIdx];
+
+      const fields = ['ecu', 'comp_name', 'event', 'symptom', 'condition', 'pre_dtc', 'causes', 'actions'];
+      fields.forEach(f => {
+        const el = document.getElementById(`edit_${f}`);
+        if (el) item[f] = el.value.trim();
+      });
+
+      item.selected = true; // 수정한 항목은 업로드 대상으로 자동 체크
+      closeModal();
+      renderTable();
+    }
+
+    // 선택 항목 일괄 DB 업데이트
     async function startUpload() {
       const targets = parsedItems.filter(i => i.selected);
       if (targets.length === 0) {
-        alert("업로드할 항목을 최소 1개 이상 선택하세요.");
+        alert("업로드할 항목을 선택해 주세요.");
         return;
       }
 
       const btn = document.getElementById('uploadBtn');
       btn.disabled = true;
-      btn.innerText = "⏳ DB 적재 진행 중...";
+      btn.innerText = "⏳ DB 동기화 진행 중...";
 
       const progressWrap = document.getElementById('progressWrap');
       const progressBar = document.getElementById('progressBar');
@@ -413,7 +565,7 @@
           });
 
           if (res.ok) {
-            statusTd.innerText = "✅ 적재 성공";
+            statusTd.innerText = "✅ 동기화 완료";
             statusTd.style.color = "var(--success)";
             successCount++;
           } else {
@@ -421,7 +573,7 @@
             statusTd.style.color = "var(--danger)";
           }
         } catch (e) {
-          statusTd.innerText = "❌ 오류";
+          statusTd.innerText = "❌ 에러";
           statusTd.style.color = "var(--danger)";
         }
 
@@ -430,8 +582,8 @@
       }
 
       btn.disabled = false;
-      btn.innerText = "⚡ Turso DB로 업로드 실행";
-      alert(`🎉 업로드 완료!\n총 ${targets.length}개 중 ${successCount}개 고장코드가 Turso DB에 깔끔하게 정제되어 저장되었습니다.`);
+      btn.innerText = "⚡ 선택 항목 DB 업데이트 실행";
+      alert(`🎉 DB 동기화 완료!\n총 ${targets.length}개 항목 중 ${successCount}개가 성공적으로 정정/저장되었습니다.`);
     }
   </script>
 </body>
