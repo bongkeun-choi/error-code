@@ -482,31 +482,7 @@
       display: block;
     }
 
-    .np-card-actions-bar {
-      display: flex;
-      justify-content: flex-end;
-      gap: 6px;
-      padding: 12px 0 10px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 12px;
-    }
-    .np-action-btn {
-      background: var(--chip-bg);
-      border: 1px solid var(--border-strong);
-      padding: 6px 11px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.15s;
-    }
-    .np-action-btn:active { transform: scale(0.95); }
-    .np-action-edit { color: var(--np-blue); border-color: rgba(0,119,255,0.3); background: var(--np-blue-light); }
-    .np-action-delete { color: var(--np-red); border-color: rgba(244,67,54,0.3); background: var(--np-red-light); }
+
 
     .np-dtc-main-title {
       font-size: 17px;
@@ -642,73 +618,7 @@
     }
     .scroll-top-btn:active { transform: scale(0.9); }
 
-    /* 모바일 바텀시트 모달 */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 1000;
-      align-items: flex-end;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-    }
-    @media (min-width: 640px) {
-      .modal-overlay { align-items: center; padding: 16px; }
-    }
-    .modal-box {
-      background: var(--card-bg);
-      color: var(--text);
-      width: 100%;
-      max-width: 720px;
-      max-height: 88vh;
-      border-top-left-radius: 20px;
-      border-top-right-radius: 20px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.2);
-      animation: slideUp 0.25s ease-out;
-    }
-    @media (min-width: 640px) {
-      .modal-box {
-        border-radius: 16px;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-        animation: fadeIn 0.2s ease-out;
-      }
-    }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
-    .modal-header {
-      padding: 14px 18px;
-      background: var(--header-bg);
-      color: var(--header-text);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .modal-body {
-      padding: 16px 18px;
-      overflow-y: auto;
-      flex: 1;
-      background: var(--bg);
-      -webkit-overflow-scrolling: touch;
-    }
-    .modal-footer {
-      padding: 12px 18px;
-      background: var(--card-bg);
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-    }
 
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 12px; font-weight: 800; color: var(--text-muted); margin-bottom: 5px; }
-    .form-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; outline: none; background: var(--card-bg); color: var(--text); }
-    .form-input:focus { border-color: var(--np-green); }
-    .form-textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; outline: none; line-height: 1.45; resize: vertical; background: var(--card-bg); color: var(--text); }
-    .form-textarea:focus { border-color: var(--np-green); }
   </style>
 </head>
 <body>
@@ -801,20 +711,7 @@
     </div>
   </div>
 
-  <!-- ✏️ 수정 모달 (모바일 바텀시트 대응) -->
-  <div class="modal-overlay" id="editModal" onclick="handleModalOverlayClick(event)">
-    <div class="modal-box" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <h3 id="editModalTitle" style="font-size:15px; font-weight:800;">진단서 내용 수정</h3>
-        <button style="background:none; border:none; color:white; font-size:20px; cursor:pointer;" onclick="closeEditModal()">✕</button>
-      </div>
-      <div class="modal-body" id="editModalBody"></div>
-      <div class="modal-footer">
-        <button class="np-action-btn" style="padding:10px 16px; font-size:13px;" onclick="closeEditModal()">취소</button>
-        <button class="np-action-btn" style="padding:10px 16px; font-size:13px; background:var(--np-green); color:white; border-color:var(--np-green);" onclick="saveEditedRecord()">💾 저장하기</button>
-      </div>
-    </div>
-  </div>
+
 
   <!-- 맨 위로 가기 플로팅 버튼 -->
   <button id="scrollTopBtn" class="scroll-top-btn" onclick="scrollToTop()">↑</button>
@@ -1043,148 +940,6 @@
       }
     }
 
-    async function deleteRecord(uniqueId, dtc, model) {
-      const confirmed = confirm(`정말 [${dtc} - ${model}] 지침서를 DB에서 삭제하시겠습니까?`);
-      if (!confirmed) return;
-
-      try {
-        const payload = {
-          requests: [{ type: "execute", stmt: { sql: "DELETE FROM diagnostics WHERE unique_id = ?;", args: [{ type: "text", value: uniqueId }] } }]
-        };
-        const res = await fetch(TURSO_URL, {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-          alert(`[${dtc} - ${model}] 데이터가 삭제되었습니다.`);
-          const q = document.getElementById('searchInput').value.trim();
-          executeSearch(q);
-        }
-      } catch (e) {
-        alert("에러: " + e.message);
-      }
-    }
-
-    function handleModalOverlayClick(e) {
-      if (e.target === document.getElementById('editModal')) {
-        closeEditModal();
-      }
-    }
-
-    function openEditModal(uniqueId) {
-      editingUniqueId = uniqueId;
-      const target = currentSearchResults.find(d => d.unique_id === uniqueId);
-      if (!target) return;
-
-      let content = {};
-      try { content = JSON.parse(target.content_json); } catch(e) {}
-
-      document.getElementById('editModalTitle').innerText = `[${target.dtc}] 진단서 내용 수정`;
-      const isSae = (target.doc_type || '').toUpperCase() === 'SAE';
-      const body = document.getElementById('editModalBody');
-
-      if (isSae) {
-        body.innerHTML = `
-          <div class="form-group"><label>적용 기종명</label><input type="text" id="edit_model" class="form-input" value="${target.model_name || ''}"></div>
-          <div class="form-group"><label>MID / 컨트롤 유니트</label><input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}"></div>
-          <div class="form-group"><label>PID/PPID/SID/PSID 파라미터명</label><input type="text" id="edit_param" class="form-input" value="${content.paramName || target.comp_name || ''}"></div>
-          <div class="form-group"><label>텍스트 프레젠테이션</label><input type="text" id="edit_disp" class="form-input" value="${content.displayMsg || ''}"></div>
-          <div class="form-group"><label>기준</label><input type="text" id="edit_std" class="form-input" value="${content.standard || ''}"></div>
-          <div class="form-group"><label>FMI 블록 JSON</label><textarea id="edit_fmi_json" class="form-textarea" rows="6">${JSON.stringify(content.fmiList || [], null, 2)}</textarea></div>
-        `;
-      } else {
-        body.innerHTML = `
-          <div class="form-group"><label>적용 기종명</label><input type="text" id="edit_model" class="form-input" value="${target.model_name || ''}"></div>
-          <div class="form-group"><label>컨트롤 유니트 (ECU)</label><input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}"></div>
-          <div class="form-group"><label>DTC 코드 / 구성부품</label><input type="text" id="edit_comp" class="form-input" value="${content.compFull || target.comp_name || ''}"></div>
-          <div class="form-group"><label>기준</label><input type="text" id="edit_std" class="form-input" value="${content.standard || ''}"></div>
-          <div class="form-group"><label>고장 이벤트 (' | ' 구분)</label><textarea id="edit_event" class="form-textarea" rows="2">${content.event || ''}</textarea></div>
-          <div class="form-group"><label>증상 (' | ' 구분)</label><textarea id="edit_symptom" class="form-textarea" rows="2">${content.symptom || ''}</textarea></div>
-          <div class="form-group"><label>가능한 이유 (' | ' 구분)</label><textarea id="edit_causes" class="form-textarea" rows="3">${content.causes || ''}</textarea></div>
-          <div class="form-group"><label>조치 내용 (' | ' 구분)</label><textarea id="edit_actions" class="form-textarea" rows="3">${content.actions || ''}</textarea></div>
-        `;
-      }
-
-      document.getElementById('editModal').style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeEditModal() {
-      document.getElementById('editModal').style.display = 'none';
-      document.body.style.overflow = '';
-      editingUniqueId = null;
-    }
-
-    async function saveEditedRecord() {
-      if (!editingUniqueId) return;
-      const target = currentSearchResults.find(d => d.unique_id === editingUniqueId);
-      if (!target) return;
-
-      let content = {};
-      try { content = JSON.parse(target.content_json); } catch(e) {}
-      const isSae = (target.doc_type || '').toUpperCase() === 'SAE';
-      const newModel = document.getElementById('edit_model').value.trim();
-
-      if (isSae) {
-        content.ecu = document.getElementById('edit_ecu').value.trim();
-        content.paramName = document.getElementById('edit_param').value.trim();
-        content.displayMsg = document.getElementById('edit_disp').value.trim();
-        content.standard = document.getElementById('edit_std').value.trim();
-        try { content.fmiList = JSON.parse(document.getElementById('edit_fmi_json').value); } catch(e) { alert('FMI JSON 형식 오류입니다.'); return; }
-      } else {
-        content.ecu = document.getElementById('edit_ecu').value.trim();
-        content.compFull = document.getElementById('edit_comp').value.trim();
-        content.standard = document.getElementById('edit_std').value.trim();
-        content.event = document.getElementById('edit_event').value.trim();
-        content.symptom = document.getElementById('edit_symptom').value.trim();
-        content.causes = document.getElementById('edit_causes').value.trim();
-        content.actions = document.getElementById('edit_actions').value.trim();
-      }
-
-      const specsText = [
-        ...(content.specs?.options || []).map(o => `${o.model} ${o.optNo} ${o.optName} ${o.optConfig}`),
-        ...(content.specs?.serials || []).map(s => `${s.model} ${s.factory} ${s.start} ${s.end}`)
-      ].join(' ');
-
-      const searchText = [
-        target.dtc, target.dtc.replace(/\s+/g, ''), newModel, content.ecu, content.compFull || content.paramName,
-        content.standard, content.event || '', content.symptom || '', content.causes || '', content.actions || '', specsText
-      ].join(' ');
-
-      const payload = {
-        requests: [{
-          type: "execute",
-          stmt: {
-            sql: `UPDATE diagnostics SET model_name = ?, ecu = ?, comp_name = ?, search_text = ?, content_json = ?, updated_at = CURRENT_TIMESTAMP WHERE unique_id = ?;`,
-            args: [
-              { type: "text", value: newModel },
-              { type: "text", value: content.ecu || '-' },
-              { type: "text", value: content.compFull || content.paramName || target.dtc },
-              { type: "text", value: searchText },
-              { type: "text", value: JSON.stringify(content) },
-              { type: "text", value: editingUniqueId }
-            ]
-          }
-        }]
-      };
-
-      try {
-        const res = await fetch(TURSO_URL, {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-          alert(`수정 내용이 저장되었습니다.`);
-          closeEditModal();
-          const q = document.getElementById('searchInput').value.trim();
-          executeSearch(q);
-        }
-      } catch(e) { alert('에러: ' + e.message); }
-    }
-
     function highlight(text, keyword) {
       if (!text || !keyword) return text || '';
       const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
@@ -1329,14 +1084,7 @@
           </div>
         `;
 
-        // 액션 버튼 바
-        const actionsBarHtml = `
-          <div class="np-card-actions-bar" onclick="event.stopPropagation()">
-            <button class="np-action-btn" onclick="copyCard('${d.dtc}', '${d.model_name}')">📋 복사</button>
-            <button class="np-action-btn np-action-edit" onclick="openEditModal('${d.unique_id}')">✏️ 수정</button>
-            <button class="np-action-btn np-action-delete" onclick="deleteRecord('${d.unique_id}', '${d.dtc}', '${d.model_name}')">🗑️ 삭제</button>
-          </div>
-        `;
+
 
         let detailBodyHtml = '';
 
@@ -1376,8 +1124,7 @@
 
             detailBodyHtml = `
               <div class="oem-sheet">
-                ${actionsBarHtml}
-                <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+                                <div class="oem-title">${highlight(d.dtc, keyword)}</div>
                 ${specTableHtml}
                 <table class="oem-tbl" style="margin-bottom:14px;">
                   <tr><th colspan="2">SAE 코드</th></tr>
@@ -1393,8 +1140,7 @@
           } else {
             detailBodyHtml = `
               <div class="oem-sheet">
-                ${actionsBarHtml}
-                <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+                                <div class="oem-title">${highlight(d.dtc, keyword)}</div>
                 ${specTableHtml}
                 <table class="oem-tbl" style="margin-bottom:14px;">
                   <tr><th colspan="2">ISO DTC 코드</th></tr>
@@ -1446,8 +1192,7 @@
             });
 
             detailBodyHtml = `
-              ${actionsBarHtml}
-              <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
+                            <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
               
               <div class="np-info-section">
                 <div class="np-info-tile">
@@ -1478,8 +1223,7 @@
             `;
           } else {
             detailBodyHtml = `
-              ${actionsBarHtml}
-              <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
+                            <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
 
               <div class="np-info-section">
                 <div class="np-info-tile">
@@ -1544,14 +1288,6 @@
       });
     }
 
-    function copyCard(dtc, model) {
-      const copyText = `[볼보 진단 지침서] 기종: ${model} / DTC: ${dtc}`;
-      navigator.clipboard.writeText(copyText).then(() => {
-        alert(`[${dtc}] 고장코드 정보가 클립보드에 복사되었습니다.`);
-      }).catch(() => {
-        alert(`[${dtc}] 복사 완료`);
-      });
-    }
-  </script>
+    </script>
 </body>
 </html>
