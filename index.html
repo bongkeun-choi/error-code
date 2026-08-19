@@ -63,7 +63,7 @@
 
   <div class="container">
     <div class="search-box">
-      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 검색 (예: MID128 PID111, B100C12, 냉각수)..." oninput="handleSearch()">
+      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 검색 (예: MID128 PID98, B100512, 오일 레벨)..." oninput="handleSearch()">
       <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
     </div>
 
@@ -169,7 +169,7 @@
         const isSae = (d.doc_type || '').toUpperCase() === 'SAE' || (content.doc_type || '').toUpperCase() === 'SAE';
         
         // 사양 표 생성
-        const models = (content.modelType || (isSae ? 'EC290B LC Volvo' : 'EC300E L Volvo')).split(' | ');
+        const models = (content.modelType || (isSae ? 'EW145B Volvo' : 'EW140E Volvo')).split(' | ');
         const factories = (content.factory || '').split(' | ');
         const starts = (content.serialStart || '').split(' | ');
         const ends = (content.serialEnd || '').split(' | ');
@@ -186,7 +186,7 @@
               </tr>
               ${models.map((m, i) => `
                 <tr>
-                  <td>${m || 'EC300E L Volvo'}</td>
+                  <td>${m || 'EW145B Volvo'}</td>
                   <td>${(factories[i] || '').replace('[옵션]', '').trim()}</td>
                   <td>${starts[i] || ''}</td>
                   <td>${ends[i] || ''}</td>
@@ -203,7 +203,7 @@
               </tr>
               ${models.map((m, i) => `
                 <tr>
-                  <td>${m || (isSae ? 'EC290B LC Volvo' : 'EC300E L Volvo')}</td>
+                  <td>${m || (isSae ? 'EW145B Volvo' : 'EW140E Volvo')}</td>
                   <td>${factories[i] || ''}</td>
                   <td>${starts[i] || ''}</td>
                   <td>${ends[i] || ''}</td>
@@ -230,7 +230,7 @@
             if (/^\d{3}\s*(?:PID|PPID|SID|PSID)\d+/i.test(p) || /^MID\d+/i.test(p) || /^SE\d+/i.test(p) || p.startsWith('128 PID')) {
               return `<div><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(p, keyword)}</a></div>`;
             }
-            return `<div>${highlight(p, keyword)}</div>`;
+            return `<div style="margin-bottom:2px;">${highlight(p, keyword)}</div>`;
           }).join('');
         };
 
@@ -238,7 +238,7 @@
         div.className = 'card';
 
         // -------------------------------------------------------------
-        // [A] SAE J1939 전용 렌더링
+        // [A] SAE J1939 전용 렌더링 (OEM 1:1 일치)
         // -------------------------------------------------------------
         if (isSae) {
           const fmiList = content.fmiList || [];
@@ -246,20 +246,20 @@
 
           fmiList.forEach(f => {
             fmiBlocksHtml += `
-              <table class="oem-tbl" style="margin-bottom:12px;">
+              <table class="oem-tbl" style="margin-bottom:14px;">
                 <tr>
                   <th style="width:28%;">고장 모드<br><b style="font-size:14px; color:var(--sae-badge);">FMI ${f.fmi}</b></th>
                   <td colspan="2"><b>탐지 조건:</b> ${highlight(f.cond, keyword)}</td>
                 </tr>
-                <tr style="background:#f8fafc; font-weight:bold;">
-                  <td></td>
-                  <td style="width:36%;">증상:</td>
-                  <td style="width:36%;">가능한 이유:</td>
+                <tr>
+                  <td style="border-right:1px solid #000; border-bottom:none;"></td>
+                  <td style="width:36%; font-weight:bold; background:#f8fafc;">증상:</td>
+                  <td style="width:36%; font-weight:bold; background:#f8fafc;">가능한 이유:</td>
                 </tr>
                 <tr>
-                  <td></td>
-                  <td>${renderBullets(f.symptom)}</td>
-                  <td>${renderBullets(f.causes)}</td>
+                  <td style="border-right:1px solid #000;"></td>
+                  <td style="vertical-align:top;">${renderBullets(f.symptom)}</td>
+                  <td style="vertical-align:top;">${renderBullets(f.causes)}</td>
                 </tr>
                 <tr>
                   <th>조치</th>

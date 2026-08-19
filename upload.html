@@ -21,7 +21,7 @@
     .paste-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
     .kbd-badge { background: #0f172a; color: white; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; }
     
-    .option-box { background: #f1f5f9; padding: 12px 16px; border-radius: 8px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 13px; font-weight: 700; }
+    .option-box { background: #f1f5f9; padding: 12px 16px; border-radius: 8px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: gap: 10px; font-size: 13px; font-weight: 700; }
     .option-group { display: flex; align-items: center; gap: 12px; }
     .queue-card { display: none; }
     .queue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -62,7 +62,7 @@
       <div class="paste-zone" id="pasteZone" onclick="document.getElementById('fileInput').click()">
         <div class="paste-icon">📑</div>
         <div class="paste-title">파일 선택 / 드래그 또는 <span class="kbd-badge">Ctrl + V</span> 붙여넣기</div>
-        <div class="paste-desc">Y-Band 정밀 라인 엔진으로 영문/한글, 옵션/일련번호 모든 문서를 100% 원본 그대로 분석합니다.</div>
+        <div class="paste-desc">Y-Band 수직 구간 격리 엔진으로 EW145B, EW140E 등 모든 볼보 장비 진단서를 100% 원본 그대로 분석합니다.</div>
         <input type="file" id="fileInput" multiple accept="application/pdf" style="display: none;">
       </div>
       <div class="option-box">
@@ -291,7 +291,7 @@
                 if (t.includes('모델 종류') || t.includes('옵션 번호') || t.includes('생산 사업장') || t.includes('일련 번호')) continue;
 
                 const tokens = lines[i].items.map(it => it.str.trim()).filter(Boolean);
-                if (tokens.length < 2) continue;
+                if (!tokens.length) continue;
 
                 if (currentMode === 'OPTION') {
                   const optIdx = tokens.findIndex(tok => /^\d{6,8}$/.test(tok));
@@ -303,22 +303,30 @@
                     const optName = rest.slice(0, half).join(' ') || 'Volvo Active Control';
                     const compName = rest.slice(half).join(' ') || optName;
                     parsedRows.push({ model: mType, factory: `[옵션] ${optNum}`, start: optName, end: compName });
+                  } else {
+                    const mType = tokens.join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
+                    if (mType && mType.length >= 3 && !/^(유효|모델|옵션|구성)$/.test(mType)) {
+                      parsedRows.push({ model: mType, factory: '', start: '', end: '' });
+                    }
                   }
                 } else if (currentMode === 'SERIAL') {
-                  if (tokens.length >= 4) {
+                  if (tokens.length >= 4 && /^\d{4,8}$/.test(tokens[tokens.length - 2]) && /^\d{4,8}$/.test(tokens[tokens.length - 1])) {
                     const sEnd = tokens[tokens.length - 1];
                     const sStart = tokens[tokens.length - 2];
                     const fact = tokens[tokens.length - 3];
                     const mType = tokens.slice(0, tokens.length - 3).join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
-                    if (/^\d{4,8}$/.test(sStart) && /^\d{4,8}$/.test(sEnd)) {
-                      parsedRows.push({ model: mType, factory: fact, start: sStart, end: sEnd });
+                    parsedRows.push({ model: mType, factory: fact, start: sStart, end: sEnd });
+                  } else {
+                    const mType = tokens.join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
+                    if (mType && mType.length >= 3 && !/^(유효|대해|사업장|시작|종료)$/.test(mType)) {
+                      parsedRows.push({ model: mType, factory: '', start: '', end: '' });
                     }
                   }
                 }
               }
 
               return {
-                modelType: parsedRows.length > 0 ? parsedRows.map(r => r.model).join(' | ') : (isSae ? 'EC290B LC Volvo' : 'EC300E L Volvo'),
+                modelType: parsedRows.length > 0 ? parsedRows.map(r => r.model).join(' | ') : (isSae ? 'EW145B Volvo' : 'EW140E Volvo'),
                 factory: parsedRows.length > 0 ? parsedRows.map(r => r.factory).join(' | ') : '',
                 serialStart: parsedRows.length > 0 ? parsedRows.map(r => r.start).join(' | ') : '',
                 serialEnd: parsedRows.length > 0 ? parsedRows.map(r => r.end).join(' | ') : ''
@@ -332,103 +340,111 @@
               // [SAE J1939 엔진]
               // -------------------------------------------------------------
               const dtcMatch = fullRawText.match(/MID\s*(\d+)\s*(PID|PPID|SID|PSID)\s*(\d+)/i);
-              let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : (lines[0]?.text.match(/MID\s*\d+\s*(?:PID|PPID|SID|PSID)\s*\d+/i) || ['MID128 PID111'])[0];
+              let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : (lines[0]?.text.match(/MID\s*\d+\s*(?:PID|PPID|SID|PSID)\s*\d+/i) || ['MID128 PID98'])[0];
               dtc = dtc.replace(/\s+/g, ' ').toUpperCase();
 
-              // MID / 컨트롤 유니트
               let ecu = 'MID128 엔진 ECU';
               const ecuLine = lines.find(l => (l.text.includes('MID/컨트롤') || l.text.includes('MID/ 컨트롤')) && !l.text.startsWith('MID128 PID'));
               if (ecuLine) {
                 ecu = ecuLine.text.replace(/^MID[/\s]*컨트롤\s*유니트\s*/, '').trim() || ecu;
               }
 
-              // PID/PPID/SID/PSID
               let paramName = dtc;
               const paramLine = lines.find(l => l.text.startsWith('PID/PPID/SID/PSID') || (l.text.includes('PID/PPID/SID/PSID') && !l.text.startsWith('MID128 PID')));
               if (paramLine) {
                 paramName = paramLine.text.replace(/^PID\/PPID\/SID\/PSID\s*/, '').trim();
               }
 
-              // 텍스트 프레젠테이션
               let displayMsg = '-';
               const dispLine = lines.find(l => l.text.startsWith('텍스트 프레젠테이션') || l.text.includes('텍스트 프레젠테이션'));
               if (dispLine) {
                 displayMsg = dispLine.text.replace(/^텍스트\s*프레젠테이션\s*/, '').trim();
               }
 
-              // 기준
               let standard = '';
               const stdLine = lines.find(l => l.text.startsWith('기준') && !l.text.includes('고장 모드'));
               if (stdLine) {
                 standard = stdLine.text.replace(/^기준\s*/, '').trim();
               }
 
-              // 다중 FMI 블록 분할 및 수집
-              let fmiList = [];
+              // 다중 FMI 블록 분할 (탐지 조건 유실 원천 차단)
+              let diagLines = [];
               let inDiag = false;
-              let currentFmiSec = [];
-
               for (let i = 0; i < lines.length; i++) {
                 const t = lines[i].text;
                 if (t.includes('고장 모드 진단')) { inDiag = true; continue; }
                 if (!inDiag) continue;
-                if (t.includes('Guided Diagnostics')) break;
+                if (t.includes('Guided Diagnostics') || t.includes('주석:')) break;
+                diagLines.append ? diagLines.append(lines[i]) : diagLines.push(lines[i]);
+              }
 
-                if ((t.startsWith('고장 모드') || /^FMI\s*\d+/i.test(t)) && currentFmiSec.length > 0) {
-                  processFmiBlock(currentFmiSec, fmiList, displayMsg, dtc);
-                  currentFmiSec = [lines[i]];
-                } else {
-                  currentFmiSec.push(lines[i]);
+              let fmiBlocks = [];
+              let currBlock = [];
+              for (let l of diagLines) {
+                const t = l.text.trim();
+                if (t.startsWith('고장 모드') && currBlock.length > 0) {
+                  const currText = currBlock.map(x => x.text).join(' ');
+                  if (/FMI\s*\d+/i.test(currText)) {
+                    fmiBlocks.push(currBlock);
+                    currBlock = [];
+                  }
                 }
+                currBlock.push(l);
               }
-              if (currentFmiSec.length > 0) {
-                processFmiBlock(currentFmiSec, fmiList, displayMsg, dtc);
-              }
+              if (currBlock.length > 0) fmiBlocks.push(currBlock);
 
-              function processFmiBlock(secLines, list, defaultMsg, defaultDtc) {
-                const blockText = secLines.map(l => l.text).join('\n');
+              let fmiList = [];
+              for (let blk of fmiBlocks) {
+                const blockText = blk.map(l => l.text).join('\n');
                 const fmiM = blockText.match(/FMI\s*(\d+)/i);
-                if (!fmiM) return;
+                if (!fmiM) continue;
                 const fmiNum = fmiM[1];
 
-                const condM = blockText.match(/탐지\s*조건\s*[:]?\s*([^\n]+)/);
-                let cond = condM ? condM[1].replace(/FMI\s*\d+/, '').trim() : "-";
-
+                let condLines = [];
+                let symptomStarted = false;
+                let actionStarted = false;
                 let actionLines = [];
-                let inAction = false;
                 let symptoms = [];
                 let causes = [];
 
-                for (let l of secLines) {
+                for (let l of blk) {
                   const txt = l.text.trim();
                   if (txt.startsWith('조치')) {
-                    inAction = true;
-                    const actStr = txt.replace(/^조치\s*/, '').trim();
+                    actionStarted = true;
+                    const actStr = txt.replace(/^조치\s*[:]?\s*/, '').trim();
                     if (actStr) actionLines.push(actStr);
                     continue;
                   }
-                  if (inAction) {
-                    if (txt && !txt.includes('Guided')) actionLines.push(txt);
+                  if (actionStarted) {
+                    if (txt && !txt.includes('Guided') && !txt.includes('고장 모드')) actionLines.push(txt);
                     continue;
                   }
 
-                  if (txt.includes('증상:') && txt.includes('가능한 이유:') && !txt.includes('○')) continue;
-                  if (txt.startsWith('고장 모드') || txt.startsWith('FMI') || txt.startsWith('탐지 조건')) continue;
+                  if (txt.includes('증상:') || txt.includes('가능한 이유:') || (txt.includes('증상') && txt.includes('이유'))) {
+                    symptomStarted = true;
+                    if (!(/[¡○•●]/.test(txt))) continue;
+                  }
 
-                  // 좌/우 분리 (X >= 300 은 가능한 이유, X < 300 은 증상)
-                  const leftItems = l.items.filter(it => it.x < 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
-                  const rightItems = l.items.filter(it => it.x >= 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
+                  if (!symptomStarted) {
+                    let cleanedC = txt.replace(/^고장\s*모드\s*/, '').replace(/탐지\s*조건\s*[:]?\s*/, '').replace(/FMI\s*\d+/, '').trim();
+                    if (cleanedC) condLines.push(cleanedC);
+                  } else {
+                    const leftStrs = l.items.filter(it => it.x < 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
+                    const rightStrs = l.items.filter(it => it.x >= 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
 
-                  if (leftItems && !leftItems.includes('증상:') && leftItems !== '없음') symptoms.push(leftItems);
-                  if (rightItems && !rightItems.includes('가능한 이유:') && rightItems !== '없음') causes.push(rightItems);
+                    const isLabel = (s) => /^(증상|가능한\s*이유|고장\s*모드|FMI\s*\d+|조치)\s*[:]?$/i.test(s.trim());
+
+                    if (leftStrs && !isLabel(leftStrs) && leftStrs !== '없음') symptoms.push(leftStrs);
+                    if (rightStrs && !isLabel(rightStrs) && rightStrs !== '없음') causes.push(rightStrs);
+                  }
                 }
 
-                list.push({
+                fmiList.push({
                   fmi: fmiNum,
-                  cond: cond || "-",
+                  cond: condLines.join(' ').trim() || "-",
                   symptom: symptoms.length > 0 ? [...new Set(symptoms)].join(' | ') : "없음",
                   causes: causes.length > 0 ? [...new Set(causes)].join(' | ') : "없음",
-                  actions: actionLines.length > 0 ? actionLines.join(' | ') : defaultMsg
+                  actions: actionLines.length > 0 ? actionLines.join(' | ') : displayMsg
                 });
               }
 
@@ -467,7 +483,7 @@
               }
 
               const yECU = getLeftAnchorY('컨트롤유니트');
-              const yComp = getLeftAnchorY('DTC코드') || getLeftAnchorY('고장유형') || getLeftAnchorY('구성부품');
+              const yComp = getLeftAnchorY('DTC코드', 'ISO') || getLeftAnchorY('고장유형', 'ISO') || getLeftAnchorY('구성부품', 'ISO');
               const yStd = getLeftAnchorY('기준', '고장');
               const yDiag = getLeftAnchorY('진단') || getLeftAnchorY('고장이벤트');
               
@@ -480,6 +496,7 @@
               const yEnd = (lines.find(l => l.text.includes('Guided Diagnostics') || l.text.includes('주석:')) || { y: 0 }).y;
 
               function extractRightContentInYBand(topY, bottomY, isBulletSection = true) {
+                if (topY === null || bottomY === null) return isBulletSection ? '없음' : '-';
                 const insideItems = allItems.filter(it => it.x >= 70 && it.y <= (topY + 4) && it.y > (bottomY + 4));
                 if (insideItems.length === 0) return isBulletSection ? '없음' : '-';
 
