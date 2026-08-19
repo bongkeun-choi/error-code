@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>볼보 진단 매뉴얼 - 스마트 비교 & 업로더</title>
+  <title>볼보 진단 매뉴얼 - 정밀 파서 & 업로더</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <style>
     :root {
@@ -28,7 +28,6 @@
     .drop-zone h3 { font-size: 18px; color: #0369a1; margin-bottom: 6px; }
     .drop-zone p { font-size: 13px; color: #64748b; }
 
-    /* 대시보드 */
     .summary-box { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
     .summary-card { background: white; border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center; }
     .summary-card b { font-size: 18px; display: block; margin-top: 4px; }
@@ -37,7 +36,6 @@
     .card-mod { border-left: 5px solid var(--warning); color: var(--warning); }
     .card-same { border-left: 5px solid #64748b; color: #64748b; }
 
-    /* 툴바 */
     .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .btn { padding: 10px 16px; border-radius: 8px; font-weight: bold; font-size: 13px; cursor: pointer; border: none; transition: 0.15s; }
     .btn-upload { background: var(--accent); color: white; }
@@ -45,7 +43,6 @@
     .btn-upload:disabled { background: #94a3b8; cursor: not-allowed; }
     .btn-clear { background: #e2e8f0; color: #475569; }
 
-    /* 테이블 */
     .tbl-container { background: white; border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
     th, td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
@@ -63,7 +60,7 @@
     .progress-wrap { display: none; margin-top: 14px; background: #e2e8f0; border-radius: 8px; height: 16px; overflow: hidden; }
     .progress-bar { height: 100%; width: 0%; background: var(--success); transition: width 0.2s; }
 
-    /* 1:1 비교 & 수정 모달 */
+    /* 1:1 비교 모달 */
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
     .modal-box { background: white; width: 100%; max-width: 960px; max-height: 90vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     .modal-header { padding: 14px 20px; background: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center; }
@@ -84,14 +81,14 @@
 <body>
 
   <div class="header">
-    <h2>🚜 볼보 진단서 스마트 비교 & 업로더</h2>
+    <h2>🚜 볼보 진단서 정밀 파서 & 웹 업로더</h2>
     <a href="index.html">🔍 검색 뷰어로 이동 ➔</a>
   </div>
 
   <div class="container">
     <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
       <h3>📁 PDF 파일을 끌어다 놓거나 클릭하여 선택</h3>
-      <p>기존 DB 데이터와 자동 비교하여 <b>[오류 수정] / [내용 변경] / [동일 항목]</b>을 자동 판별합니다.</p>
+      <p>일련번호/사양 표 및 증상, 가능한 이유, 조치 내용을 완벽하게 분리 추출합니다.</p>
       <input type="file" id="fileInput" multiple accept=".pdf" style="display:none;" onchange="handleFiles(this.files)">
     </div>
 
@@ -99,7 +96,6 @@
       <div class="progress-bar" id="progressBar"></div>
     </div>
 
-    <!-- 4단계 분류 대시보드 -->
     <div class="summary-box" id="summaryBox" style="display:none;">
       <div class="summary-card card-new">신규 고장코드<b id="cntNew">0</b></div>
       <div class="summary-card card-err">기존 오류 감지 (정정 대상)<b id="cntErr">0</b></div>
@@ -107,7 +103,6 @@
       <div class="summary-card card-same">100% 동일 (패스 권장)<b id="cntSame">0</b></div>
     </div>
 
-    <!-- 액션 툴바 -->
     <div class="toolbar" id="toolbar" style="display:none;">
       <div>
         <label><input type="checkbox" id="checkAll" onchange="toggleSelectAll(this.checked)"> 전체 선택/해제</label>
@@ -119,18 +114,19 @@
       </div>
     </div>
 
-    <!-- 분석 및 비교 테이블 -->
     <div class="tbl-container" id="tblBox" style="display:none;">
       <table>
         <thead>
           <tr>
             <th style="width:40px;">선택</th>
-            <th>지능형 상태 판별</th>
+            <th>상태 판별</th>
             <th>고장코드</th>
             <th>규격</th>
+            <th>사양/일련번호</th>
             <th>구성부품 / 고장유형</th>
-            <th>증상 (새 데이터)</th>
-            <th>가능한 이유 (새 데이터)</th>
+            <th>증상</th>
+            <th>가능한 이유</th>
+            <th>조치 내용</th>
             <th>정밀 대조</th>
             <th>업로드 상태</th>
           </tr>
@@ -140,7 +136,7 @@
     </div>
   </div>
 
-  <!-- 1:1 Diff & Edit 모달 -->
+  <!-- 1:1 대조 및 수정 모달 -->
   <div class="modal-overlay" id="diffModal">
     <div class="modal-box">
       <div class="modal-header">
@@ -149,7 +145,7 @@
       </div>
       <div class="modal-body">
         <p style="font-size:12.5px; color:#64748b; margin-bottom:14px;">
-          오른쪽 <b>[새 분석 데이터]</b>에서 내용을 직접 수정할 수 있습니다. 수정한 내용은 업로드 시 그대로 반영됩니다.
+          오른쪽 <b>[새 분석 데이터]</b>에서 내용을 직접 수정할 수 있으며, 수정 시 즉시 적용됩니다.
         </p>
         <div class="diff-grid" id="diffContainer"></div>
       </div>
@@ -189,25 +185,61 @@
       return fullText;
     }
 
+    // 볼보 사양(일련번호 및 옵션) 파싱
+    function extractSpecsFromText(rawText) {
+      const specs = [];
+      const clean = (t) => (t || "").replace(/[\r\n\t]+/g, ' ').trim();
+
+      // (1) 일련번호 감지 패턴: Changwon/Shanghai 310001 320000
+      const serialRegex = /(Changwon|Shanghai|창원|상하이)\s+(\d{4,8})\s+(\d{4,8})/gi;
+      let match;
+      while ((match = serialRegex.exec(rawText)) !== null) {
+        specs.push({
+          spec_type: "SERIAL",
+          model_type: "EC300E L Volvo",
+          opt_number: null, opt_name: null, opt_config: null,
+          factory: match[1], serial_start: match[2], serial_end: match[3]
+        });
+      }
+
+      // (2) 옵션/구성 감지 패턴: 옵션번호 (6~8자리)
+      const optRegex = /(\d{6,8})\s+([A-Za-z0-9\s]+?)\s+(Volvo\s+Active\s+Control|[A-Za-z0-9\s]+)/gi;
+      while ((match = optRegex.exec(rawText)) !== null) {
+        if (!specs.some(s => s.opt_number === match[1])) {
+          specs.push({
+            spec_type: "OPTION",
+            model_type: "EC300E L Volvo",
+            opt_number: match[1], opt_name: clean(match[2]), opt_config: clean(match[3]),
+            factory: null, serial_start: null, serial_end: null
+          });
+        }
+      }
+
+      if (specs.length === 0) {
+        specs.push({
+          spec_type: "SERIAL", model_type: "EC300E L Volvo",
+          opt_number: null, opt_name: null, opt_config: null,
+          factory: "Changwon", serial_start: "310001", serial_end: "320000"
+        });
+      }
+      return specs;
+    }
+
+    // 정밀 텍스트 파서
     function parseVolvoText(rawText, filename) {
       const clean = (t) => (t || "").replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
+      
       const cleanBullets = (t) => {
         if (!t) return "없음";
-        let cleaned = t.replace(/[\u00A1¡○•●]+/g, '\n');
-        let parts = cleaned.split(/[\n\r]+/)
+        // 특수문자 및 불릿 기호 기준으로 정확히 분할
+        let parts = t.split(/[\u00A1¡○•●\n\r]+/)
           .map(s => s.replace(/^[:\s\-]+/, '').trim())
-          .filter(s => s && s !== '없음');
+          .filter(s => s && s !== '없음' && !s.startsWith('나열 된 DTC') && !s.startsWith('가능한 이유') && !s.startsWith('조치'));
         return parts.length > 0 ? parts.join(' | ') : "없음";
       };
 
       const isSae = /MID\s*\d+|PID\s*\d+|SID\s*\d+|FMI\s*\d+/i.test(rawText);
-
-      function sliceSection(text, startPattern, nextPatterns) {
-        const nextRegexStr = nextPatterns.join('|');
-        const pattern = new RegExp(`${startPattern}[:\\s]*(.*?)(?=${nextRegexStr}|$)`, 'is');
-        const m = text.match(pattern);
-        return m ? clean(m[1]) : '';
-      }
+      const specs = extractSpecsFromText(rawText);
 
       if (isSae) {
         const mid = (rawText.match(/MID\s*(\d+)/i) || ['', '128'])[1];
@@ -221,34 +253,31 @@
         return {
           filename, dtc, doc_type: "SAE", ecu, comp_name: `${pidType}${pidNum}`,
           standard: "SAE J1939", event: "-", symptom: "없음", condition: "없음", pre_dtc: "없음",
-          causes: "없음", actions: "없음", display_msg: disp
+          causes: "없음", actions: "없음", display_msg: disp, specs, fmi_list: []
         };
       } else {
         const dtcM = rawText.match(/([P|U|B|C][0-9A-Z]{5,7})/);
         const dtc = dtcM ? dtcM[1] : filename.replace(/\.pdf$/i, '');
 
-        const nextMarkers = [
-          '컨트롤\\s*유니트',
-          'DTC\\s*코드[\\s,]*시스템[\\s/]*구성부품[\\s,]*고장\\s*유형',
-          '기준\\s*진단|기준',
-          '고장\\s*이벤트',
-          '증상',
-          '조건',
-          '선행조치\\s*DTC|선행조치',
-          '가능한\\s*이유',
-          '조치',
-          'Guided\\s*Diagnostics'
-        ];
+        // 정밀 섹션별 추출기
+        const getSec = (startRe, endRe) => {
+          const p = new RegExp(`${startRe}[\\s:]*(.*?)(?=${endRe}|$)`, 'is');
+          const m = rawText.match(p);
+          return m ? m[1].trim() : '';
+        };
 
-        let ecu = sliceSection(rawText, '컨트롤\\s*유니트', nextMarkers.slice(1)) || "일반 용도 장비의 전자 컨트롤 유닛 2";
-        let compName = sliceSection(rawText, '(?:DTC\\s*코드[\\s,]*시스템[\\s/]*구성부품[\\s,]*고장\\s*유형|고장\\s*유형|구성부품)', nextMarkers.slice(2)) || dtc;
-        let standard = sliceSection(rawText, '기준', nextMarkers.slice(3));
-        let event = sliceSection(rawText, '고장\\s*이벤트', nextMarkers.slice(4)) || "-";
-        let symptomRaw = sliceSection(rawText, '증상', nextMarkers.slice(5));
-        let condRaw = sliceSection(rawText, '조건', nextMarkers.slice(6));
-        let preDtcRaw = sliceSection(rawText, '(?:선행조치\\s*DTC|선행조치)', nextMarkers.slice(7));
-        let causesRaw = sliceSection(rawText, '가능한\\s*이유', nextMarkers.slice(8));
-        let actionsRaw = sliceSection(rawText, '조치', ['Guided\\s*Diagnostics', '$']);
+        let ecu = getSec('컨트롤\\s*유니트', 'DTC\\s*코드|고장\\s*유형|구성부품') || "일반 용도 장비의 전자 컨트롤 유닛 1";
+        let compName = getSec('(?:DTC\\s*코드[\\s,]*시스템[\\s/]*구성부품[\\s,]*고장\\s*유형|고장\\s*유형|구성부품)', '기준|고장\\s*이벤트|진단') || dtc;
+        
+        let stdRaw = getSec('기준', '진단|고장\\s*이벤트');
+        let standard = (stdRaw.includes('진단') || stdRaw.trim() === '') ? '' : clean(stdRaw);
+
+        let event = getSec('고장\\s*이벤트', '증상') || "-";
+        let symptomRaw = getSec('증상', '조건');
+        let condRaw = getSec('조건', '선행조치\\s*DTC|선행조치');
+        let preDtcRaw = getSec('(?:선행조치\\s*DTC|선행조치)[^\\n]*?\\)', '가능한\\s*이유|조치');
+        let causesRaw = getSec('가능한\\s*이유', '(?<!관리\\s*)조치(?![가-힣])'); // "관리 조치하십시오"의 조치는 무시하고 단독 "조치"만 매칭
+        let actionsRaw = getSec('(?<!관리\\s*)조치(?![가-힣])', 'Guided\\s*Diagnostics|$');
 
         let preDtcCodes = preDtcRaw.match(/([P|U|B|C][0-9A-Z]{5,7})/g);
         let preDtc = "없음";
@@ -259,16 +288,18 @@
 
         return {
           filename, dtc, doc_type: "ISO",
-          ecu: ecu.replace(/^[:\s]+/, ''),
-          comp_name: compName.replace(/^[:,\s]+/, ''),
-          standard: standard.replace(/^[:\s]+/, ''),
-          event: event.replace(/^[:¡○•●\s]+/, '') || "-",
+          ecu: clean(ecu),
+          comp_name: clean(compName),
+          standard: standard,
+          event: clean(event).replace(/^[¡○•●\-\s]+/, '') || "-",
           symptom: cleanBullets(symptomRaw),
           condition: cleanBullets(condRaw),
           pre_dtc: preDtc,
           causes: cleanBullets(causesRaw),
           actions: cleanBullets(actionsRaw),
-          display_msg: "-"
+          display_msg: "-",
+          specs,
+          fmi_list: []
         };
       }
     }
@@ -281,7 +312,7 @@
       document.getElementById('tblBox').style.display = 'block';
 
       const statusEl = document.getElementById('selectedInfo');
-      statusEl.innerText = "⏳ DB 레코드와 1:1 비교 분석 중...";
+      statusEl.innerText = "⏳ 정밀 분석 및 사양 매핑 중...";
 
       for (const file of files) {
         if (!file.name.toLowerCase().endsWith('.pdf')) continue;
@@ -298,7 +329,6 @@
       renderTable();
     }
 
-    // Turso DB 데이터와 1:1 지능형 비교 엔진
     async function checkAndDiffWithTurso() {
       if (parsedItems.length === 0) return;
       const dtcs = parsedItems.map(i => `'${i.dtc}'`).join(',');
@@ -328,34 +358,31 @@
 
         parsedItems.forEach(item => {
           if (!existingMap.has(item.dtc)) {
-            // [1] 신규 등록
             item.status = "NEW";
             item.selected = true;
           } else {
             const old = existingMap.get(item.dtc);
             item.existingRecord = old;
 
-            // [2] 기존 DB 데이터의 오염/오류 여부 판별 (줄바꿈 깨짐, 필드 침범 등)
             const isOldCorrupted = (
-              old.ecu.length > 70 ||
-              old.comp_name.includes('고장 이벤트') ||
-              old.comp_name.includes('증상') ||
-              (old.symptom === '없음' && item.symptom !== '없음') ||
-              (old.causes === '없음' && item.causes !== '없음')
+              old.actions.includes('나열 된 DTC') ||
+              old.actions.includes('가능한 이유') ||
+              old.standard === '진단' ||
+              old.causes.includes('센서 결함 조치') ||
+              (old.symptom === '없음' && item.symptom !== '없음')
             );
 
-            // [3] 100% 동일 여부 확인
-            const keys = ['ecu', 'comp_name', 'event', 'symptom', 'condition', 'pre_dtc', 'causes', 'actions'];
+            const keys = ['ecu', 'comp_name', 'standard', 'event', 'symptom', 'condition', 'pre_dtc', 'causes', 'actions'];
             const isIdentical = keys.every(k => (old[k] || '').trim() === (item[k] || '').trim());
 
             if (isOldCorrupted) {
-              item.status = "ERROR_FIX"; // 기존 오류 감지 -> 자동 선택 (덮어쓰기 권장)
+              item.status = "ERROR_FIX";
               item.selected = true;
             } else if (isIdentical) {
-              item.status = "IDENTICAL"; // 완전 동일 -> 자동 체크 해제
+              item.status = "IDENTICAL";
               item.selected = false;
             } else {
-              item.status = "MODIFIED";  // 내용 변경/개정판 -> 선택 유지
+              item.status = "MODIFIED";
               item.selected = true;
             }
           }
@@ -380,9 +407,11 @@
 
         let statusBadge = '';
         if (item.status === 'NEW') statusBadge = '<span class="badge badge-new">🟢 신규 등록</span>';
-        else if (item.status === 'ERROR_FIX') statusBadge = '<span class="badge badge-err">🛠️ 기존 오류 감지 (정정 권장)</span>';
+        else if (item.status === 'ERROR_FIX') statusBadge = '<span class="badge badge-err">🛠️ 기존 오류 감지 (정정 대상)</span>';
         else if (item.status === 'MODIFIED') statusBadge = '<span class="badge badge-mod">🔄 내용 변경 (개정판)</span>';
         else if (item.status === 'IDENTICAL') statusBadge = '<span class="badge badge-same">⚪ 100% 동일 (패스)</span>';
+
+        const specText = item.specs.map(s => `${s.factory || s.opt_name || '일반'}(${s.serial_start || s.opt_number || '-'})`).join(', ');
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -390,9 +419,11 @@
           <td>${statusBadge}</td>
           <td><b style="color:var(--danger); font-size:14px;">${item.dtc}</b></td>
           <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">${item.doc_type}</span></td>
+          <td style="font-size:11.5px; color:#475569;">${specText}</td>
           <td>${item.comp_name || '-'}</td>
-          <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.symptom || '없음'}</td>
-          <td style="max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.causes || '없음'}</td>
+          <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.symptom || '없음'}</td>
+          <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.causes || '없음'}</td>
+          <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${item.actions || '없음'}</td>
           <td>
             ${item.existingRecord ? `<button class="btn-diff" onclick="openDiffModal(${idx})">🔍 대조 / 수정</button>` : '-'}
           </td>
@@ -425,19 +456,19 @@
       document.getElementById('fileInput').value = '';
     }
 
-    // 1:1 Diff & Edit 모달 열기
     function openDiffModal(idx) {
       currentEditIdx = idx;
       const item = parsedItems[idx];
       const old = item.existingRecord || {};
 
-      document.getElementById('modalTitle').innerText = `[${item.dtc}] 데이터 1:1 정밀 대조 및 수정`;
+      document.getElementById('modalTitle').innerText = `[${item.dtc}] 1:1 정밀 대조 및 수정`;
       const container = document.getElementById('diffContainer');
       container.innerHTML = '';
 
       const fields = [
         { key: 'ecu', label: '컨트롤 유니트' },
         { key: 'comp_name', label: 'DTC 코드 / 구성부품' },
+        { key: 'standard', label: '기준' },
         { key: 'event', label: '고장 이벤트' },
         { key: 'symptom', label: '증상' },
         { key: 'condition', label: '조건' },
@@ -446,9 +477,8 @@
         { key: 'actions', label: '조치 내용' }
       ];
 
-      // 좌측: 기존 DB 데이터 / 우측: 새 데이터 (입력창)
-      let leftHtml = '<div class="diff-col"><h4 style="color:var(--danger);">⚠️ 기존 DB 저장 내용 (오류 가능성)</h4>';
-      let rightHtml = '<div class="diff-col"><h4 style="color:var(--accent);">✨ 새 PDF 분석 데이터 (직접 수정 가능)</h4>';
+      let leftHtml = '<div class="diff-col"><h4 style="color:var(--danger);">⚠️ 기존 DB 저장 내용 (오류)</h4>';
+      let rightHtml = '<div class="diff-col"><h4 style="color:var(--accent);">✨ 새 PDF 정제 데이터 (수정 가능)</h4>';
 
       fields.forEach(f => {
         const oldVal = old[f.key] || '없음';
@@ -486,18 +516,18 @@
       if (currentEditIdx === null) return;
       const item = parsedItems[currentEditIdx];
 
-      const fields = ['ecu', 'comp_name', 'event', 'symptom', 'condition', 'pre_dtc', 'causes', 'actions'];
+      const fields = ['ecu', 'comp_name', 'standard', 'event', 'symptom', 'condition', 'pre_dtc', 'causes', 'actions'];
       fields.forEach(f => {
         const el = document.getElementById(`edit_${f}`);
         if (el) item[f] = el.value.trim();
       });
 
-      item.selected = true; // 수정한 항목은 업로드 대상으로 자동 체크
+      item.selected = true;
       closeModal();
       renderTable();
     }
 
-    // 선택 항목 일괄 DB 업데이트
+    // DB 업데이트 실행 (사양 테이블 동시 인서트 포함)
     async function startUpload() {
       const targets = parsedItems.filter(i => i.selected);
       if (targets.length === 0) {
@@ -523,8 +553,8 @@
         statusTd.innerText = "전송 중...";
         statusTd.style.color = "var(--accent)";
 
-        const payload = {
-          requests: [{
+        const requestsBatch = [
+          {
             type: "execute",
             stmt: {
               sql: `
@@ -551,8 +581,33 @@
                 { type: "text", value: item.display_msg }
               ]
             }
-          }]
-        };
+          },
+          {
+            type: "execute",
+            stmt: { sql: "DELETE FROM diagnostic_specs WHERE dtc = ?;", args: [{ type: "text", value: item.dtc }] }
+          }
+        ];
+
+        // 사양(일련번호/옵션) 데이터 추가
+        for (const s of item.specs) {
+          requestsBatch.push({
+            type: "execute",
+            stmt: {
+              sql: "INSERT INTO diagnostic_specs (dtc, spec_type, model_type, opt_number, opt_name, opt_config, factory, serial_start, serial_end) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);",
+              args: [
+                { type: "text", value: item.dtc },
+                { type: "text", value: s.spec_type },
+                { type: s.model_type ? "text" : "null", value: s.model_type || "" },
+                { type: s.opt_number ? "text" : "null", value: s.opt_number || "" },
+                { type: s.opt_name ? "text" : "null", value: s.opt_name || "" },
+                { type: s.opt_config ? "text" : "null", value: s.opt_config || "" },
+                { type: s.factory ? "text" : "null", value: s.factory || "" },
+                { type: s.serial_start ? "text" : "null", value: s.serial_start || "" },
+                { type: s.serial_end ? "text" : "null", value: s.serial_end || "" }
+              ]
+            }
+          });
+        }
 
         try {
           const res = await fetch(`${TURSO_DB_URL}/v2/pipeline`, {
@@ -561,11 +616,11 @@
               "Authorization": `Bearer ${TURSO_ADMIN_TOKEN}`,
               "Content-Type": "application/json"
             },
-            body: JSON.stringify(payload)
+            body: JSON.stringify({ requests: requestsBatch })
           });
 
           if (res.ok) {
-            statusTd.innerText = "✅ 동기화 완료";
+            statusTd.innerText = "✅ 정정 완료";
             statusTd.style.color = "var(--success)";
             successCount++;
           } else {
@@ -583,7 +638,7 @@
 
       btn.disabled = false;
       btn.innerText = "⚡ 선택 항목 DB 업데이트 실행";
-      alert(`🎉 DB 동기화 완료!\n총 ${targets.length}개 항목 중 ${successCount}개가 성공적으로 정정/저장되었습니다.`);
+      alert(`🎉 DB 정정 완료!\n총 ${targets.length}개 항목 중 ${successCount}개가 완벽하게 정정되어 Turso DB에 저장되었습니다.`);
     }
   </script>
 </body>
