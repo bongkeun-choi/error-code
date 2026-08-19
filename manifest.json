@@ -1,0 +1,24 @@
+{
+  "name": "볼보 진단 매뉴얼 (Volvo DTC Viewer)",
+  "short_name": "볼보진단",
+  "description": "볼보 굴착기 고장코드 및 진단 지침서 모바일 뷰어",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#03c75a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
