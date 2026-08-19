@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>볼보 진단 매뉴얼 뷰어 (OEM 1:1)</title>
+  <title>볼보 진단 매뉴얼 뷰어</title>
   <style>
     :root {
       --primary-dark: #0f172a;
@@ -16,11 +16,11 @@
       --text: #1e293b;
       --muted: #64748b;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; }
     body { background: var(--bg); color: var(--text); padding-bottom: 80px; }
 
     .header { background: var(--primary-dark); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
-    .header h1 { font-size: 17px; font-weight: 800; }
+    .header h1 { font-size: 16px; font-weight: 800; }
     .header-links { display: flex; align-items: center; gap: 12px; }
     .header-links a { background: var(--accent); color: white; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; text-decoration: none; }
     .live-indicator { font-size: 11px; background: #059669; color: white; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
@@ -45,7 +45,6 @@
     .oem-tbl th, .oem-tbl td { border: 1px solid #000; padding: 6px 9px; vertical-align: top; line-height: 1.45; }
     .oem-tbl th { background: #e2e8f0; font-weight: 800; text-align: left; }
     
-    .fmi-tbl-block { margin-bottom: 14px; border: 1.5px solid #000; }
     .bullet-item { margin-bottom: 3px; display: flex; gap: 6px; align-items: flex-start; }
     .bullet-icon { color: #000; font-weight: bold; }
     .highlight { background-color: #fef08a; padding: 1px 3px; border-radius: 2px; font-weight: bold; }
@@ -57,14 +56,14 @@
   <div class="header">
     <h1>🚜 볼보 진단 매뉴얼 뷰어</h1>
     <div class="header-links">
-      <a href="upload.html">📤 JSON 업로더</a>
+      <a href="upload.html">📤 진단서 업로더</a>
       <div class="live-indicator">● Turso Edge Online</div>
     </div>
   </div>
 
   <div class="container">
     <div class="search-box">
-      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 검색 (예: MID128 PID110, B100C12, 냉각수)..." oninput="handleSearch()">
+      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 부품명 검색 (예: MID128 PID111, B100C12, 냉각수)..." oninput="handleSearch()">
       <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
     </div>
 
@@ -167,62 +166,77 @@
         let content = {};
         try { content = JSON.parse(d.content_json); } catch(e) { content = {}; }
 
-        const isSae = d.doc_type === 'SAE' || content.doc_type === 'SAE';
-        const specs = content.specs || [];
-        const serials = specs.filter(s => s.type === 'SERIAL');
-        const options = specs.filter(s => s.type === 'OPTION');
+        const isSae = (d.doc_type || '').toUpperCase() === 'SAE' || (content.doc_type || '').toUpperCase() === 'SAE';
+        
+        // 사양 표 생성
+        const models = (content.modelType || 'EC300E L Volvo').split(' | ');
+        const factories = (content.factory || '').split(' | ');
+        const starts = (content.serialStart || '').split(' | ');
+        const ends = (content.serialEnd || '').split(' | ');
 
-        let specTablesHtml = '';
-        if (serials.length > 0) {
-          specTablesHtml += `
-            <table class="oem-tbl">
-              <tr><th colspan="4">일련 번호에 대해 유효</th></tr>
-              <tr style="background:#f8fafc; font-weight:bold;">
-                <td style="width:28%;">모델 종류:</td>
-                <td style="width:24%;">생산 사업장</td>
-                <td style="width:24%;">일련 번호 시작</td>
-                <td style="width:24%;">일련 번호 종료</td>
-              </tr>
-              ${serials.map(s => `<tr><td>${s.model || 'EC290B LC Volvo'}</td><td>${s.factory || ''}</td><td>${s.start || ''}</td><td>${s.end || ''}</td></tr>`).join('')}
-            </table>
-          `;
-        }
-        if (options.length > 0) {
-          specTablesHtml += `
+        const isOpt = factories.some(f => f.startsWith('[옵션]'));
+        let specTableHtml = '';
+
+        if (isOpt) {
+          specTableHtml = `
             <table class="oem-tbl">
               <tr><th colspan="4">옵션/구성에 대해 유효</th></tr>
               <tr style="background:#f8fafc; font-weight:bold;">
-                <td style="width:28%;">모델 종류:</td>
-                <td style="width:24%;">옵션 번호</td>
-                <td style="width:24%;">옵션</td>
-                <td style="width:24%;">구성</td>
+                <td style="width:28%;">모델 종류:</td><td style="width:24%;">옵션 번호</td><td style="width:24%;">옵션</td><td style="width:24%;">구성</td>
               </tr>
-              ${options.map(s => `<tr><td>${s.model || 'EC300E L Volvo'}</td><td>${s.opt_no || ''}</td><td>${s.opt_name || ''}</td><td>${s.opt_config || ''}</td></tr>`).join('')}
+              ${models.map((m, i) => `
+                <tr>
+                  <td>${m || 'EC300E L Volvo'}</td>
+                  <td>${(factories[i] || '').replace('[옵션]', '').trim()}</td>
+                  <td>${starts[i] || ''}</td>
+                  <td>${ends[i] || ''}</td>
+                </tr>
+              `).join('')}
+            </table>
+          `;
+        } else {
+          specTableHtml = `
+            <table class="oem-tbl">
+              <tr><th colspan="4">일련 번호에 대해 유효</th></tr>
+              <tr style="background:#f8fafc; font-weight:bold;">
+                <td style="width:28%;">모델 종류:</td><td style="width:24%;">생산 사업장</td><td style="width:24%;">일련 번호 시작</td><td style="width:24%;">일련 번호 종료</td>
+              </tr>
+              ${models.map((m, i) => `
+                <tr>
+                  <td>${m || (isSae ? 'EC290B LC Volvo' : 'EC300E L Volvo')}</td>
+                  <td>${factories[i] || ''}</td>
+                  <td>${starts[i] || ''}</td>
+                  <td>${ends[i] || ''}</td>
+                </tr>
+              `).join('')}
             </table>
           `;
         }
 
-        const renderBullets = (arr) => {
-          if (!arr || arr.length === 0) return '<div class="bullet-item"><span class="bullet-icon">○</span><span>없음</span></div>';
-          return arr.map(item => `<div class="bullet-item"><span class="bullet-icon">○</span><span>${highlight(item, keyword)}</span></div>`).join('');
+        const renderBullets = (rawStr) => {
+          if (!rawStr || rawStr === '없음' || rawStr === '-') return '<div class="bullet-item"><span class="bullet-icon">○</span><span>없음</span></div>';
+          return String(rawStr).split('|').map(s => {
+            const t = s.trim();
+            return t ? `<div class="bullet-item"><span class="bullet-icon">○</span><span>${highlight(t, keyword)}</span></div>` : '';
+          }).join('');
         };
 
         const div = document.createElement('div');
         div.className = 'card';
 
         // -------------------------------------------------------------
-        // [A] SAE J1939 전용 렌더링 (다중 FMI 블록)
+        // [A] SAE J1939 전용 렌더링
         // -------------------------------------------------------------
         if (isSae) {
-          const fmiList = content.fmi_list || [];
+          const fmiList = content.fmiList || [];
           let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:bold; margin: 12px 0 6px;">고장 모드 진단</h3>';
 
           fmiList.forEach(f => {
             fmiBlocksHtml += `
               <table class="oem-tbl" style="margin-bottom:12px;">
                 <tr>
-                  <th style="width:28%;">고장 모드<br><b style="font-size:14px; color:var(--sae-badge);">${f.fmi}</b></th>
-                  <td colspan="2"><b>탐지 조건:</b> ${highlight(f.condition, keyword)}</td>
+                  <th style="width:28%;">고장 모드<br><b style="font-size:14px; color:var(--sae-badge);">FMI ${f.fmi}</b></th>
+                  <td colspan="2"><b>탐지 조건:</b> ${highlight(f.cond, keyword)}</td>
                 </tr>
                 <tr style="background:#f8fafc; font-weight:bold;">
                   <td></td>
@@ -231,12 +245,12 @@
                 </tr>
                 <tr>
                   <td></td>
-                  <td>${renderBullets(f.symptoms)}</td>
+                  <td>${renderBullets(f.symptom)}</td>
                   <td>${renderBullets(f.causes)}</td>
                 </tr>
                 <tr>
                   <th>조치</th>
-                  <td colspan="2"><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${f.action || d.dtc}</a></td>
+                  <td colspan="2"><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${f.actions || d.dtc}</a></td>
                 </tr>
               </table>
             `;
@@ -246,25 +260,25 @@
             <div class="card-header">
               <div>
                 <span class="badge-sae-dtc">${d.dtc}</span>
-                <b style="margin-left:8px; font-size:14px;">${highlight(content.param_name || d.comp_name, keyword)}</b>
+                <b style="margin-left:8px; font-size:14px;">${highlight(content.paramName || d.comp_name, keyword)}</b>
               </div>
               <button class="btn-copy" onclick="copyCard('${d.dtc}')">📋 복사</button>
             </div>
             <div class="oem-sheet">
               <div class="oem-title">${highlight(d.dtc, keyword)}</div>
-              ${specTablesHtml}
+              ${specTableHtml}
               <table class="oem-tbl">
                 <tr><th colspan="2" style="background:#e2e8f0;">SAE 코드</th></tr>
-                <tr><th style="width:28%;">MID/컨트롤 유니트</th><td>${highlight(content.mid_ecu || d.ecu, keyword)}</td></tr>
-                <tr><th>PID/PPID/SID/PSID</th><td><b>${highlight(content.param_name || d.comp_name, keyword)}</b></td></tr>
+                <tr><th style="width:28%;">MID/컨트롤 유니트</th><td>${highlight(content.ecu || d.ecu, keyword)}</td></tr>
+                <tr><th>PID/PPID/SID/PSID</th><td><b>${highlight(content.paramName || d.comp_name, keyword)}</b></td></tr>
                 <tr><th colspan="2" style="background:#e2e8f0;">장비 디스플레이 메시지</th></tr>
-                <tr><th>텍스트 프레젠테이션</th><td>${highlight(content.display_msg || '-', keyword)}</td></tr>
+                <tr><th>텍스트 프레젠테이션</th><td>${highlight(content.displayMsg || '-', keyword)}</td></tr>
                 <tr><th>기준</th><td><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(content.standard || '', keyword)}</a></td></tr>
               </table>
               ${fmiBlocksHtml}
             </div>
           `;
-        }
+        } 
         // -------------------------------------------------------------
         // [B] ISO 표준 전용 렌더링
         // -------------------------------------------------------------
@@ -273,24 +287,24 @@
             <div class="card-header">
               <div>
                 <span class="badge-dtc">${d.dtc}</span>
-                <b style="margin-left:8px; font-size:14px;">${highlight(d.comp_name, keyword)}</b>
+                <b style="margin-left:8px; font-size:14px;">${highlight(content.compFull || d.comp_name, keyword)}</b>
               </div>
               <button class="btn-copy" onclick="copyCard('${d.dtc}')">📋 복사</button>
             </div>
             <div class="oem-sheet">
               <div class="oem-title">${highlight(d.dtc, keyword)}</div>
-              ${specTablesHtml}
+              ${specTableHtml}
               <table class="oem-tbl">
                 <tr><th colspan="2" style="background:#e2e8f0;">ISO DTC 코드</th></tr>
-                <tr><th style="width:28%;">컨트롤 유니트</th><td>${highlight(d.ecu, keyword)}</td></tr>
-                <tr><th>DTC 코드, 시스템/구성부품, 고장 유형</th><td><b>${highlight(d.comp_name, keyword)}</b></td></tr>
+                <tr><th style="width:28%;">컨트롤 유니트</th><td>${highlight(content.ecu || d.ecu, keyword)}</td></tr>
+                <tr><th>DTC 코드, 시스템/구성부품, 고장 유형</th><td><b>${highlight(content.compFull || d.comp_name, keyword)}</b></td></tr>
                 <tr><th>기준</th><td>${highlight(content.standard || '', keyword)}</td></tr>
               </table>
               <table class="oem-tbl">
-                <tr><th style="width:28%;">고장 이벤트</th><td>${highlight(content.event, keyword)}</td></tr>
-                <tr><th>증상</th><td>${renderBullets(content.symptoms)}</td></tr>
-                <tr><th>조건</th><td>${renderBullets(content.conditions)}</td></tr>
-                <tr><th>선행조치 DTC</th><td>${renderBullets(content.pre_dtc)}</td></tr>
+                <tr><th style="width:28%;">고장 이벤트</th><td>${highlight(content.event || '-', keyword)}</td></tr>
+                <tr><th>증상</th><td>${renderBullets(content.symptom)}</td></tr>
+                <tr><th>조건</th><td>${renderBullets(content.condition)}</td></tr>
+                <tr><th>선행조치 DTC</th><td>${renderBullets(content.preDtc)}</td></tr>
                 <tr><th>가능한 이유</th><td>${renderBullets(content.causes)}</td></tr>
                 <tr><th>조치</th><td>${renderBullets(content.actions)}</td></tr>
               </table>
