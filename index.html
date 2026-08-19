@@ -169,7 +169,6 @@
         const isSae = (d.doc_type || '').toUpperCase() === 'SAE' || (content.doc_type || '').toUpperCase() === 'SAE';
         const specs = content.specs || {};
         
-        // 사양 표 렌더링 (옵션표 + 일련번호표 완벽 분리 지원)
         let specTableHtml = '';
         
         // 1. 옵션/구성에 대해 유효 표
@@ -222,9 +221,7 @@
 
         const renderEvent = (rawStr) => {
           if (!rawStr || rawStr === '없음' || rawStr === '-') return '-';
-          if (String(rawStr).includes('|')) {
-            return renderBullets(rawStr);
-          }
+          if (String(rawStr).includes('|')) return renderBullets(rawStr);
           return highlight(rawStr, keyword);
         };
 
@@ -249,7 +246,7 @@
             if (/^\d{3}\s*(?:PID|PPID|SID|PSID)\d+/i.test(p) || /^MID\d+/i.test(p) || /^SE\d+/i.test(p) || p.startsWith('128 PID')) {
               return `<div><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(p, keyword)}</a></div>`;
             }
-            return `<div style="margin-bottom:2px;">${highlight(p, keyword)}</div>`;
+            return `<div style="margin-bottom:3px;">${highlight(p, keyword)}</div>`;
           }).join('');
         };
 

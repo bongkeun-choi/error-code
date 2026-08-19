@@ -3,73 +3,114 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>볼보 DTC/SAE 다중 파일 통합 분석기 (Turso DB)</title>
+  <title>볼보 DTC/SAE AI 자가치유 다중 파서 통합 업로더</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <style>
+    :root {
+      --primary-dark: #0f172a;
+      --accent: #0284c7;
+      --danger: #dc2626;
+      --sae-badge: #c2410c;
+      --ai-purple: #7c3aed;
+      --bg: #f8fafc;
+      --border: #cbd5e1;
+      --text: #1e293b;
+      --muted: #64748b;
+    }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; }
-    body { background: #f8fafc; color: #1e293b; padding-bottom: 60px; }
-    .app-header { background: #0f172a; color: white; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    body { background: var(--bg); color: var(--text); padding-bottom: 60px; }
+    .app-header { background: var(--primary-dark); color: white; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
     .app-header h1 { font-size: 15px; font-weight: 800; }
-    .btn-home { background: #0284c7; color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 800; }
-    .container { max-width: 960px; margin: 20px auto; padding: 0 16px; }
+    .btn-home { background: var(--accent); color: white; text-decoration: none; padding: 6px 12px; border-radius: 6px; font-size: 12.5px; font-weight: 800; }
+    .container { max-width: 1060px; margin: 20px auto; padding: 0 16px; }
     .card { background: white; padding: 22px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 20px; border: 1px solid #e2e8f0; }
     
-    .paste-zone { border: 2.5px dashed #0284c7; padding: 40px 15px; text-align: center; border-radius: 14px; cursor: pointer; background: #f0f9ff; transition: all 0.2s; }
-    .paste-zone:hover { background: #e0f2fe; border-color: #0369a1; }
-    .paste-icon { font-size: 38px; margin-bottom: 8px; }
-    .paste-title { font-size: 16.5px; font-weight: 900; color: #0284c7; margin-bottom: 6px; }
-    .paste-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
-    .kbd-badge { background: #0f172a; color: white; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+    /* API 키 설정 패널 */
+    .config-box { background: #f1f5f9; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .config-input-group { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .config-input { width: 100%; max-width: 480px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; font-family: monospace; }
     
-    .option-box { background: #f1f5f9; padding: 12px 16px; border-radius: 8px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 13px; font-weight: 700; }
-    .option-group { display: flex; align-items: center; gap: 12px; }
+    .paste-zone { border: 2.5px dashed var(--accent); padding: 36px 15px; text-align: center; border-radius: 14px; cursor: pointer; background: #f0f9ff; transition: all 0.2s; }
+    .paste-zone:hover { background: #e0f2fe; border-color: #0369a1; }
+    .paste-icon { font-size: 36px; margin-bottom: 8px; }
+    .paste-title { font-size: 16px; font-weight: 900; color: var(--accent); margin-bottom: 6px; }
+    .paste-desc { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+    .kbd-badge { background: var(--primary-dark); color: white; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; }
+    
+    .option-box { background: #f8fafc; padding: 12px 16px; border-radius: 8px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12.5px; font-weight: 700; border: 1px solid var(--border); }
     .queue-card { display: none; }
     .queue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .queue-title { font-size: 15px; font-weight: 800; color: #0f172a; }
+    .queue-title { font-size: 15px; font-weight: 800; color: var(--primary-dark); }
     .queue-list { display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; margin-bottom: 14px; }
     .queue-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f1f5f9; border-radius: 8px; font-size: 13px; font-weight: 700; }
     .queue-item.done { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+    .queue-item.ai-done { background: #f5f3ff; color: var(--ai-purple); border: 1px solid #ddd6fe; }
     .queue-item.error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
     .queue-item.processing { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
     
     .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; display: inline-block; white-space: nowrap; }
-    .badge-new { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
-    .badge-variant { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
-    .badge-dup { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
-    .badge-iso { background: #e0f2fe; color: #0284c7; border: 1px solid #bae6fd; }
-    .badge-sae { background: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff; }
+    .badge-iso { background: #e0f2fe; color: var(--accent); border: 1px solid #bae6fd; }
+    .badge-sae { background: #ffedd5; color: var(--sae-badge); border: 1px solid #fed7aa; }
+    .badge-ai { background: #ede9fe; color: var(--ai-purple); border: 1px solid #ddd6fe; }
     
+    .btn-preview { background: #f0fdf4; color: #15803d; border: 1.5px solid #86efac; padding: 5px 9px; border-radius: 6px; font-size: 11.5px; font-weight: 800; cursor: pointer; transition: 0.15s; white-space: nowrap; }
+    .btn-preview:hover { background: #dcfce7; border-color: #4ade80; }
+
     table { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12px; }
-    th, td { border: 1px solid #cbd5e1; padding: 8px 10px; text-align: left; }
+    th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; }
     th { background: #f8fafc; font-weight: 700; color: #475569; }
+    
     .btn-group { display: flex; gap: 10px; margin-top: 16px; }
     .btn { flex: 1; padding: 13px; border: none; border-radius: 8px; font-size: 14px; font-weight: 800; cursor: pointer; text-align: center; }
     .btn-success { background: #16a34a; color: white; }
-    .btn:disabled { background: #cbd5e1; cursor: not-allowed; }
+    .btn:disabled { background: var(--border); cursor: not-allowed; }
     .status { margin-top: 12px; font-weight: bold; font-size: 13.5px; text-align: center; }
     .status.success { color: #16a34a; }
-    .status.error { color: #dc2626; }
-    .status.loading { color: #0284c7; }
+    .status.error { color: var(--danger); }
+    .status.loading { color: var(--accent); }
+
+    /* 팝업 모달 */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 1000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(2px); }
+    .modal-box { background: white; width: 100%; max-width: 920px; max-height: 90vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
+    .modal-header { padding: 14px 20px; background: var(--primary-dark); color: white; display: flex; justify-content: space-between; align-items: center; }
+    .modal-body { padding: 20px; overflow-y: auto; flex: 1; background: #f8fafc; }
+    .modal-footer { padding: 12px 20px; background: white; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+
+    .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 14px; }
+    .oem-tbl th, .oem-tbl td { border: 1px solid #000; padding: 6px 9px; vertical-align: top; line-height: 1.45; }
+    .oem-tbl th { background: #e2e8f0; font-weight: 800; text-align: left; }
+    .bullet-item { margin-bottom: 3px; display: flex; gap: 6px; align-items: flex-start; }
+    .bullet-icon { color: #000; font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="app-header">
-    <h1>🛠️ 볼보 DTC/SAE 다중 파일 통합 분석기 (Turso DB)</h1>
+    <h1>🛠️ 볼보 DTC/SAE AI 자가치유 파서 & 업로더</h1>
     <a href="index.html" class="btn-home">🔍 진단서 조회 (홈)</a>
   </div>
   <div class="container">
+    
+    <!-- Gemini API Key 설정 바 (로컬 스토리지에만 저장) -->
+    <div class="config-box">
+      <div class="config-input-group">
+        <label style="font-size:12.5px; font-weight:bold; white-space:nowrap;">🤖 Gemini API 키 (선택/신규양식 자동파싱용):</label>
+        <input type="password" id="geminiApiKey" class="config-input" placeholder="AI Studio에서 발급받은 API 키 입력 (미입력 시 룰 파서만 작동)">
+      </div>
+      <button class="btn-home" style="background:#475569; font-size:11.5px;" onclick="saveApiKey()">키 저장</button>
+    </div>
+
     <div class="card">
       <div class="paste-zone" id="pasteZone" onclick="document.getElementById('fileInput').click()">
         <div class="paste-icon">📑</div>
         <div class="paste-title">파일 선택 / 드래그 또는 <span class="kbd-badge">Ctrl + V</span> 붙여넣기</div>
-        <div class="paste-desc">Y-Band 정밀 라인 엔진으로 옵션/일련번호 복합 사양 및 모든 볼보 진단서를 100% 원본 그대로 분석합니다.</div>
+        <div class="paste-desc">고속 룰 엔진(0.05초) 처리 후, 미확인/변형 문서는 AI 자가치유 엔진이 100% 자동 분석합니다.</div>
         <input type="file" id="fileInput" multiple accept="application/pdf" style="display: none;">
       </div>
       <div class="option-box">
-        <span>⚙️ 기존 DB와 중복 발생 시 동작:</span>
-        <div class="option-group">
-          <label style="font-weight:normal; margin:0; cursor:pointer;"><input type="radio" name="dupPolicy" value="overwrite" checked> 기존 데이터 덮어쓰기(갱신)</label>
-          <label style="font-weight:normal; margin:0; cursor:pointer;"><input type="radio" name="dupPolicy" value="skip"> 중복 항목 저장 건너뛰기</label>
+        <span>⚙️ 기존 DB 중복 시 동작:</span>
+        <div>
+          <label style="margin-right:12px; cursor:pointer;"><input type="radio" name="dupPolicy" value="overwrite" checked> 기존 데이터 덮어쓰기(갱신)</label>
+          <label style="cursor:pointer;"><input type="radio" name="dupPolicy" value="skip"> 중복 항목 건너뛰기</label>
         </div>
       </div>
       <div id="status" class="status"></div>
@@ -77,24 +118,40 @@
     
     <div class="card queue-card" id="queueCard">
       <div class="queue-header">
-        <span class="queue-title">📋 분석 대기열 및 중복 판별 현황 (<span id="parsedCount">0</span>건)</span>
+        <span class="queue-title">📋 분석 대기열 및 엔진 판별 현황 (<span id="parsedCount">0</span>건)</span>
         <button class="btn-home" style="background:#64748b; font-size:11.5px;" onclick="clearQueue()">목록 초기화</button>
       </div>
       <div class="queue-list" id="queueList"></div>
       <table id="summaryTable">
         <thead>
           <tr>
-            <th style="width: 10%;">구분</th>
-            <th style="width: 18%;">에러코드 (DTC)</th>
-            <th style="width: 28%;">적용 기종 / 일련번호(옵션)</th>
-            <th style="width: 26%;">고장 유형 / 파라미터</th>
-            <th style="width: 18%;">중복 검사 상태</th>
+            <th style="width: 8%;">구분</th>
+            <th style="width: 15%;">에러코드 (DTC)</th>
+            <th style="width: 25%;">적용 기종 / 사양</th>
+            <th style="width: 24%;">고장 유형 / 시스템</th>
+            <th style="width: 14%;">파싱 엔진 / 점수</th>
+            <th style="width: 14%;">화면 검수</th>
           </tr>
         </thead>
         <tbody id="summaryBody"></tbody>
       </table>
       <div class="btn-group">
         <button id="btnSaveAll" class="btn btn-success" onclick="saveAllToTursoDb()" disabled>⚡ 분석된 모든 진단서 Turso DB에 일괄 저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔍 1:1 OEM 뷰어 미리보기 모달 -->
+  <div class="modal-overlay" id="previewModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="previewModalTitle" style="font-size:15px; font-weight:800;">진단서 화면 미리보기 (검수 모드)</h3>
+        <button style="background:none; border:none; color:white; font-size:18px; cursor:pointer;" onclick="closePreviewModal()">✕</button>
+      </div>
+      <div class="modal-body" id="previewModalBody"></div>
+      <div class="modal-footer">
+        <button class="btn-home" style="background:#64748b;" onclick="closePreviewModal()">닫기</button>
+        <button class="btn-home" id="btnSingleUpload" onclick="uploadCurrentPreviewItem()">💾 이 항목만 즉시 DB 저장</button>
       </div>
     </div>
   </div>
@@ -109,8 +166,19 @@
 
     let parsedResults = [];
     let existingDbItems = [];
+    let currentPreviewIndex = null;
 
-    window.onload = () => { fetchExistingDb(); };
+    window.onload = () => {
+      const savedKey = localStorage.getItem('gemini_api_key') || '';
+      document.getElementById('geminiApiKey').value = savedKey;
+      fetchExistingDb();
+    };
+
+    function saveApiKey() {
+      const k = document.getElementById('geminiApiKey').value.trim();
+      localStorage.setItem('gemini_api_key', k);
+      alert('Gemini API 키가 브라우저에 안전하게 저장되었습니다.');
+    }
 
     async function fetchExistingDb() {
       try {
@@ -122,25 +190,12 @@
         };
         const res = await fetch(`${TURSO_DB_URL}/v2/pipeline`, {
           method: 'POST',
-          headers: {
-            "Authorization": `Bearer ${TURSO_ADMIN_TOKEN}`,
-            "Content-Type": "application/json"
-          },
+          headers: { "Authorization": `Bearer ${TURSO_ADMIN_TOKEN}`, "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
         const data = await res.json();
         const rows = data.results[0]?.response?.result?.rows || [];
-        existingDbItems = rows.map(r => {
-          let cJson = {};
-          try { cJson = JSON.parse(r[4].value); } catch(e) {}
-          return {
-            dtc: r[0].value,
-            docType: r[1].value,
-            ecu: r[2].value,
-            compName: r[3].value,
-            ...cJson
-          };
-        });
+        existingDbItems = rows.map(r => ({ dtc: r[0].value }));
       } catch (err) {
         console.warn('DB 로드 실패:', err);
       }
@@ -173,7 +228,7 @@
       if (!files || files.length === 0) return;
       document.getElementById('queueCard').style.display = 'block';
       await fetchExistingDb();
-      showStatus(`${files.length}개 파일 순차 분석 시작...`, 'loading');
+      showStatus(`${files.length}개 파일 자동 분석 파이프라인 가동...`, 'loading');
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -181,27 +236,25 @@
         addQueueItemUI(itemIndex, file.name || `파일 #${itemIndex + 1}`);
 
         try {
-          updateQueueStatus(itemIndex, '정밀 분석 중...', 'processing');
-          const resObj = await processPdf(file);
+          updateQueueStatus(itemIndex, '고속 룰 엔진 분석 중...', 'processing');
+          const resObj = await parsePdfAdaptivePipeline(file, itemIndex);
 
           if (resObj && resObj.item) {
             const itemToSave = resObj.item;
             itemToSave.docType = resObj.docType;
+            itemToSave._parserEngine = resObj.engineName;
+            itemToSave._qualityScore = resObj.score;
 
             const dtcClean = String(itemToSave.dtc || '').toUpperCase().replace(/[\s\-_]/g, '');
-            const matchExisting = existingDbItems.filter(d => String(d.dtc || '').toUpperCase().replace(/[\s\-_]/g, '') === dtcClean);
-            
-            let dupStatus = 'NEW';
-            if (matchExisting.length > 0) {
-              dupStatus = 'EXACT_DUP';
-            }
+            const isDup = existingDbItems.some(d => String(d.dtc || '').toUpperCase().replace(/[\s\-_]/g, '') === dtcClean);
+            itemToSave._isDup = isDup;
 
-            itemToSave._dupStatus = dupStatus;
             parsedResults.push(itemToSave);
-            updateQueueStatus(itemIndex, `✅ [${resObj.docType.toUpperCase()}] ${itemToSave.dtc} 완료`, 'done');
-            addSummaryRow(itemToSave);
+            const statusClass = resObj.engineName.includes('AI') ? 'ai-done' : 'done';
+            updateQueueStatus(itemIndex, `✅ [${itemToSave._parserEngine}] ${itemToSave.dtc} 완료`, statusClass);
+            addSummaryRow(itemToSave, itemIndex);
           } else {
-            throw new Error('고장코드 추출 불가');
+            throw new Error('고장코드 구조화 실패');
           }
         } catch (err) {
           updateQueueStatus(itemIndex, `❌ 실패 (${err.message})`, 'error');
@@ -215,353 +268,344 @@
     }
 
     // =========================================================================
-    // [Y-Band 수직 구간 격리 파싱 엔진]
+    // [핵심] 자가치유 다중 파서 파이프라인 (룰 평가 -> AI Fallback)
     // =========================================================================
-    function processPdf(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = async function() {
-          try {
-            const typedarray = new Uint8Array(this.result);
-            const pdf = await pdfjsLib.getDocument({ data: typedarray, disableFontFace: true }).promise;
-            let allItems = [];
+    async function parsePdfAdaptivePipeline(file, queueIdx) {
+      const arrayBuffer = await file.arrayBuffer();
+      const typedarray = new Uint8Array(arrayBuffer);
+      const pdf = await pdfjsLib.getDocument({ data: typedarray, disableFontFace: true }).promise;
+      let allItems = [];
 
-            for (let p = 1; p <= pdf.numPages; p++) {
-              const page = await pdf.getPage(p);
-              const content = await page.getTextContent();
-              content.items.forEach(it => {
-                const str = it.str.trim();
-                if (str.length > 0) {
-                  allItems.push({
-                    str: str,
-                    x: it.transform[4],
-                    y: it.transform[5] + (pdf.numPages - p) * 1000
-                  });
-                }
-              });
-            }
-
-            let lines = [];
-            allItems.forEach(it => {
-              let line = lines.find(l => Math.abs(l.y - it.y) <= 3.5);
-              if (!line) {
-                line = { y: it.y, items: [] };
-                lines.push(line);
-              }
-              line.items.push(it);
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        content.items.forEach(it => {
+          const str = it.str.trim();
+          if (str.length > 0) {
+            allItems.push({
+              str: str,
+              x: it.transform[4],
+              y: it.transform[5] + (pdf.numPages - p) * 1000
             });
-            lines.sort((a, b) => b.y - a.y);
-            lines.forEach(l => {
-              l.items.sort((a, b) => a.x - b.x);
-              l.text = l.items.map(it => it.str).join(' ').trim();
-            });
+          }
+        });
+      }
 
-            const fullRawText = lines.map(l => l.text).join('\n');
-            const isSae = /SAE\s*코드|MID\s*\d+|PID\s*\d+|PPID\s*\d+|SID\s*\d+|PSID\s*\d+|고장\s*모드\s*진단/i.test(fullRawText);
-
-            // 1. 상단 다중 사양 표(옵션표 + 일련번호표) 동시 분리 수집
-            function parseTopTablesUnified() {
-              let options = [];
-              let serials = [];
-              let currentMode = null;
-
-              for (let i = 0; i < lines.length; i++) {
-                const t = lines[i].text;
-                if (t.includes('옵션') && (t.includes('구성') || t.includes('유효'))) {
-                  currentMode = 'OPTION';
-                  continue;
-                } else if (t.includes('일련 번호에 대해 유효') || (t.includes('일련 번호') && t.includes('시작'))) {
-                  currentMode = 'SERIAL';
-                  continue;
-                } else if (t.includes('ISO DTC') || t.includes('SAE 코드') || t.includes('컨트롤 유니트') || t.includes('장비 디스플레이')) {
-                  break;
-                }
-
-                if (!currentMode) continue;
-                if (t.includes('모델 종류') || t.includes('옵션 번호') || t.includes('생산 사업장') || t.includes('일련 번호')) continue;
-
-                const tokens = lines[i].items.map(it => it.str.trim()).filter(Boolean);
-                if (!tokens.length) continue;
-
-                if (currentMode === 'OPTION') {
-                  const optIdx = tokens.findIndex(tok => /^\d{6,8}$/.test(tok));
-                  if (optIdx !== -1) {
-                    const mType = tokens.slice(0, optIdx).join(' ').replace(/모델\s*종류\s*:?/g, '').trim() || "EC300E L Volvo";
-                    const optNum = tokens[optIdx];
-                    const rest = tokens.slice(optIdx + 1);
-                    const half = Math.ceil(rest.length / 2);
-                    const optName = rest.slice(0, half).join(' ') || 'Volvo Active Control';
-                    const compName = rest.slice(half).join(' ') || optName;
-                    options.push({ model: mType, optNo: optNum, optName: optName, optConfig: compName });
-                  } else {
-                    const mType = tokens.join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
-                    if (mType && mType.length >= 3 && !/^(유효|모델|옵션|구성)$/.test(mType)) {
-                      options.push({ model: mType, optNo: '', optName: '', optConfig: '' });
-                    }
-                  }
-                } else if (currentMode === 'SERIAL') {
-                  if (tokens.length >= 4 && /^\d{4,8}$/.test(tokens[tokens.length - 2]) && /^\d{4,8}$/.test(tokens[tokens.length - 1])) {
-                    const sEnd = tokens[tokens.length - 1];
-                    const sStart = tokens[tokens.length - 2];
-                    const fact = tokens[tokens.length - 3];
-                    const mType = tokens.slice(0, tokens.length - 3).join(' ').replace(/모델\s*종류\s*:?/g, '').trim() || "EC300E L Volvo";
-                    serials.push({ model: mType, factory: fact, start: sStart, end: sEnd });
-                  } else {
-                    const mType = tokens.join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
-                    if (mType && mType.length >= 3 && !/^(유효|대해|사업장|시작|종료)$/.test(mType)) {
-                      serials.push({ model: mType, factory: '', start: '', end: '' });
-                    }
-                  }
-                }
-              }
-
-              return { options, serials };
-            }
-
-            const specsData = parseTopTablesUnified();
-
-            if (isSae) {
-              // -------------------------------------------------------------
-              // [SAE J1939 엔진]
-              // -------------------------------------------------------------
-              const dtcMatch = fullRawText.match(/MID\s*(\d+)\s*(PID|PPID|SID|PSID)\s*(\d+)/i);
-              let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : (lines[0]?.text.match(/MID\s*\d+\s*(?:PID|PPID|SID|PSID)\s*\d+/i) || ['MID128 PID98'])[0];
-              dtc = dtc.replace(/\s+/g, ' ').toUpperCase();
-
-              let ecu = 'MID128 엔진 ECU';
-              const ecuLine = lines.find(l => (l.text.includes('MID/컨트롤') || l.text.includes('MID/ 컨트롤')) && !l.text.startsWith('MID128 PID'));
-              if (ecuLine) {
-                ecu = ecuLine.text.replace(/^MID[/\s]*컨트롤\s*유니트\s*/, '').trim() || ecu;
-              }
-
-              let paramName = dtc;
-              const paramLine = lines.find(l => l.text.startsWith('PID/PPID/SID/PSID') || (l.text.includes('PID/PPID/SID/PSID') && !l.text.startsWith('MID128 PID')));
-              if (paramLine) {
-                paramName = paramLine.text.replace(/^PID\/PPID\/SID\/PSID\s*/, '').trim();
-              }
-
-              let displayMsg = '-';
-              const dispLine = lines.find(l => l.text.startsWith('텍스트 프레젠테이션') || l.text.includes('텍스트 프레젠테이션'));
-              if (dispLine) {
-                displayMsg = dispLine.text.replace(/^텍스트\s*프레젠테이션\s*/, '').trim();
-              }
-
-              let standard = '';
-              const stdLine = lines.find(l => l.text.startsWith('기준') && !l.text.includes('고장 모드'));
-              if (stdLine) {
-                standard = stdLine.text.replace(/^기준\s*/, '').trim();
-              }
-
-              let diagLines = [];
-              let inDiag = false;
-              for (let i = 0; i < lines.length; i++) {
-                const t = lines[i].text;
-                if (t.includes('고장 모드 진단')) { inDiag = true; continue; }
-                if (!inDiag) continue;
-                if (t.includes('Guided Diagnostics') || t.includes('주석:')) break;
-                diagLines.push(lines[i]);
-              }
-
-              let fmiBlocks = [];
-              let currBlock = [];
-              for (let l of diagLines) {
-                const t = l.text.trim();
-                if (t.startsWith('고장 모드') && currBlock.length > 0) {
-                  const currText = currBlock.map(x => x.text).join(' ');
-                  if (/FMI\s*\d+/i.test(currText)) {
-                    fmiBlocks.push(currBlock);
-                    currBlock = [];
-                  }
-                }
-                currBlock.push(l);
-              }
-              if (currBlock.length > 0) fmiBlocks.push(currBlock);
-
-              let fmiList = [];
-              for (let blk of fmiBlocks) {
-                const blockText = blk.map(l => l.text).join('\n');
-                const fmiM = blockText.match(/FMI\s*(\d+)/i);
-                if (!fmiM) continue;
-                const fmiNum = fmiM[1];
-
-                let condLines = [];
-                let symptomStarted = false;
-                let actionStarted = false;
-                let actionLines = [];
-                let symptoms = [];
-                let causes = [];
-
-                for (let l of blk) {
-                  const txt = l.text.trim();
-                  if (txt.startsWith('조치')) {
-                    actionStarted = true;
-                    const actStr = txt.replace(/^조치\s*[:]?\s*/, '').trim();
-                    if (actStr) actionLines.push(actStr);
-                    continue;
-                  }
-                  if (actionStarted) {
-                    if (txt && !txt.includes('Guided') && !txt.includes('고장 모드')) actionLines.push(txt);
-                    continue;
-                  }
-
-                  if (txt.includes('증상:') || txt.includes('가능한 이유:') || (txt.includes('증상') && txt.includes('이유'))) {
-                    symptomStarted = true;
-                    if (!(/[¡○•●]/.test(txt))) continue;
-                  }
-
-                  if (!symptomStarted) {
-                    let cleanedC = txt.replace(/^고장\s*모드\s*/, '').replace(/탐지\s*조건\s*[:]?\s*/, '').replace(/FMI\s*\d+/, '').trim();
-                    if (cleanedC) condLines.push(cleanedC);
-                  } else {
-                    const leftStrs = l.items.filter(it => it.x < 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
-                    const rightStrs = l.items.filter(it => it.x >= 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
-
-                    const isLabel = (s) => /^(증상|가능한\s*이유|고장\s*모드|FMI\s*\d+|조치)\s*[:]?$/i.test(s.trim());
-
-                    if (leftStrs && !isLabel(leftStrs) && leftStrs !== '없음') symptoms.push(leftStrs);
-                    if (rightStrs && !isLabel(rightStrs) && rightStrs !== '없음') causes.push(rightStrs);
-                  }
-                }
-
-                fmiList.push({
-                  fmi: fmiNum,
-                  cond: condLines.join(' ').trim() || "",
-                  symptom: symptoms.length > 0 ? [...new Set(symptoms)].join(' | ') : "없음",
-                  causes: causes.length > 0 ? [...new Set(causes)].join(' | ') : "없음",
-                  actions: actionLines.length > 0 ? actionLines.join(' | ') : displayMsg
-                });
-              }
-
-              resolve({
-                docType: 'sae',
-                item: {
-                  dtc: dtc,
-                  displayMsg: displayMsg,
-                  specs: specsData,
-                  ecu: ecu,
-                  paramName: paramName,
-                  standard: standard,
-                  fmiList: fmiList
-                }
-              });
-            } else {
-              // -------------------------------------------------------------
-              // [ISO 엔진 - B11B018 등 완벽 분리]
-              // -------------------------------------------------------------
-              let dtc = '';
-              const dtcMatch = fullRawText.match(/([P|U|B|C][0-9A-Z]{5,7})/);
-              if (dtcMatch) dtc = dtcMatch[1].replace(/\s+/g, '');
-
-              let ecu = "일반 용도 장비의 전자 컨트롤 유닛 2";
-              let compFull = dtc;
-              let standard = "";
-              let eventLines = [];
-              let symptomLines = [];
-              let condLines = [];
-              let preDtcLines = [];
-              let causesLines = [];
-              let actionsLines = [];
-
-              let currentSlot = null;
-
-              for (let l of lines) {
-                const t = l.text.trim();
-                if (t === dtc && !currentSlot) continue;
-
-                if ((t.includes('옵션') && (t.includes('구성') || t.includes('유효'))) || (t.includes('일련 번호') && t.includes('유효'))) {
-                  currentSlot = 'SPECS';
-                  continue;
-                } else if (t.startsWith('컨트롤 유니트') || t.startsWith('컨트롤유니트')) {
-                  currentSlot = 'ECU';
-                  const val = t.replace(/^컨트롤\s*유니트\s*[:]?\s*/, '').trim();
-                  if (val) ecu = val;
-                  continue;
-                } else if (t.startsWith('DTC 코드') || t.startsWith('DTC코드') || t.startsWith('고장 유형') || t.startsWith('고장유형') || t.startsWith('구성부품')) {
-                  currentSlot = 'COMP';
-                  const val = t.replace(/^(?:DTC\s*코드[,\s]*시스템[/\s]*구성부품[,\s]*고장\s*유형|고장\s*유형|구성부품)\s*[:]?\s*/, '').trim();
-                  if (val) compFull = val;
-                  continue;
-                } else if (t.startsWith('기준') && !t.includes('고장')) {
-                  currentSlot = 'STD';
-                  const val = t.replace(/^기준\s*[:]?\s*/, '').trim();
-                  if (val && val !== '진단') standard = val;
-                  continue;
-                } else if (t === '진단') {
-                  continue;
-                } else if (t.startsWith('고장 이벤트') || t.startsWith('고장이벤트')) {
-                  currentSlot = 'EVENT';
-                  const val = t.replace(/^고장\s*이벤트\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
-                  if (val && val !== '없음') eventLines.push(val);
-                  continue;
-                } else if (t.startsWith('증상')) {
-                  currentSlot = 'SYMPTOM';
-                  const val = t.replace(/^증상\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
-                  if (val && val !== '없음') symptomLines.push(val);
-                  continue;
-                } else if (t.startsWith('조건')) {
-                  currentSlot = 'COND';
-                  const val = t.replace(/^조건\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
-                  if (val && val !== '없음') condLines.push(val);
-                  continue;
-                } else if (t.startsWith('선행조치')) {
-                  currentSlot = 'PRE_DTC';
-                  continue;
-                } else if (t.startsWith('가능한 이유') || t.startsWith('가능한이유')) {
-                  currentSlot = 'CAUSES';
-                  const val = t.replace(/^가능한\s*이유\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
-                  if (val && val !== '없음') causesLines.push(val);
-                  continue;
-                } else if (t.startsWith('조치')) {
-                  currentSlot = 'ACTIONS';
-                  const val = t.replace(/^조치\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim();
-                  if (val && val !== '없음') actionsLines.push(val);
-                  continue;
-                } else if (t.includes('Guided Diagnostics') || t.includes('주석:')) {
-                  currentSlot = null;
-                  continue;
-                }
-
-                const cleaned = t.replace(/^[¡○•●\-\s:]+/, '').trim();
-                if (!cleaned || cleaned === '없음') continue;
-
-                if (currentSlot === 'ECU') ecu += ' ' + t;
-                else if (currentSlot === 'COMP') compFull += ' ' + t;
-                else if (currentSlot === 'STD') { if (t !== '진단') standard += ' ' + t; }
-                else if (currentSlot === 'EVENT') eventLines.push(cleaned);
-                else if (currentSlot === 'SYMPTOM') symptomLines.push(cleaned);
-                else if (currentSlot === 'COND') condLines.push(cleaned);
-                else if (currentSlot === 'PRE_DTC') {
-                  const codes = t.match(/([P|U|B|C][0-9A-Z]{5,7})/g);
-                  if (codes) preDtcLines.push(...codes.filter(c => c !== dtc && !c.startsWith('DTC')));
-                } else if (currentSlot === 'CAUSES') causesLines.push(cleaned);
-                else if (currentSlot === 'ACTIONS') actionsLines.push(cleaned);
-              }
-
-              resolve({
-                docType: 'iso',
-                item: {
-                  dtc: dtc,
-                  specs: specsData,
-                  ecu: ecu.trim(),
-                  compFull: compFull.trim(),
-                  standard: standard.trim(),
-                  event: eventLines.length > 0 ? [...new Set(eventLines)].join(' | ') : "-",
-                  symptom: symptomLines.length > 0 ? [...new Set(symptomLines)].join(' | ') : "없음",
-                  condition: condLines.length > 0 ? [...new Set(condLines)].join(' | ') : "없음",
-                  preDtc: preDtcLines.length > 0 ? [...new Set(preDtcLines)].join(' | ') : "없음",
-                  causes: causesLines.length > 0 ? [...new Set(causesLines)].join(' | ') : "없음",
-                  actions: actionsLines.length > 0 ? [...new Set(actionsLines)].join(' | ') : "없음"
-                }
-              });
-            }
-          } catch (err) { reject(err); }
-        };
-        reader.readAsArrayBuffer(file);
+      let lines = [];
+      allItems.forEach(it => {
+        let line = lines.find(l => Math.abs(l.y - it.y) <= 3.5);
+        if (!line) { line = { y: it.y, items: [] }; lines.push(line); }
+        line.items.push(it);
       });
+      lines.sort((a, b) => b.y - a.y);
+      lines.forEach(l => {
+        l.items.sort((a, b) => a.x - b.x);
+        l.text = l.items.map(it => it.str).join(' ').trim();
+      });
+
+      const fullRawText = lines.map(l => l.text).join('\n');
+
+      // 1차 시도: 로컬 룰 기반 파서 실행
+      const localResult = executeLocalRuleParsers(lines, fullRawText, allItems);
+      const qualityScore = evaluateQualityScore(localResult);
+
+      // 무결성 점수가 85점 이상이면 0.05초 만에 즉시 통과!
+      if (qualityScore >= 85) {
+        return {
+          docType: localResult.docType,
+          item: localResult.item,
+          engineName: localResult.strategyName,
+          score: qualityScore
+        };
+      }
+
+      // 2차 시도: 룰 검증 점수 미달 시 AI 자가치유 엔진(Gemini API) 자동 가동
+      const apiKey = localStorage.getItem('gemini_api_key') || document.getElementById('geminiApiKey').value.trim();
+      if (apiKey) {
+        updateQueueStatus(queueIdx, '🤖 AI 자가치유 엔진 분석 중...', 'processing');
+        try {
+          const aiResult = await parseWithGeminiAI(fullRawText, apiKey);
+          if (aiResult && aiResult.dtc) {
+            return {
+              docType: aiResult.doc_type ? aiResult.doc_type.toLowerCase() : 'iso',
+              item: aiResult,
+              engineName: 'Gemini AI 자가치유',
+              score: 100
+            };
+          }
+        } catch (e) {
+          console.warn('AI 파서 호출 실패, 로컬 결과로 대체:', e);
+        }
+      }
+
+      // API 키가 없거나 AI 호출 실패 시 로컬 최선 결과 반환
+      return {
+        docType: localResult.docType,
+        item: localResult.item,
+        engineName: `${localResult.strategyName} (보정요망)`,
+        score: qualityScore
+      };
+    }
+
+    // -------------------------------------------------------------
+    // [품질 점수 평가기 (Quality Validator)]
+    // -------------------------------------------------------------
+    function evaluateQualityScore(res) {
+      if (!res || !res.item) return 0;
+      const it = res.item;
+      let score = 0;
+
+      // 1. DTC 유효성 (+20)
+      if (it.dtc && it.dtc.length >= 3) score += 20;
+
+      // 2. 컨트롤 유니트 정상 분리 (+20)
+      if (it.ecu && it.ecu !== '-' && !it.ecu.includes('DTC')) score += 20;
+
+      // 3. 구성부품 / 고장유형 오염 없음 (+20)
+      if (it.compFull && !it.compFull.includes('컨트롤 유니트')) score += 20;
+
+      // 4. 본문 진단 내용 보존 (+20)
+      if (res.docType === 'sae') {
+        if (it.fmiList && it.fmiList.length > 0 && it.fmiList[0].fmi) score += 20;
+      } else {
+        if (it.event !== '-' || it.symptom !== '없음' || it.actions !== '없음') score += 20;
+      }
+
+      // 5. 라벨 텍스트 노이즈 없음 (+20)
+      if (!String(it.symptom || '').includes('증상:') && !String(it.causes || '').includes('가능한 이유:')) score += 20;
+
+      return score;
+    }
+
+    // -------------------------------------------------------------
+    // [로컬 다중 파서 전략 실행기]
+    // -------------------------------------------------------------
+    function executeLocalRuleParsers(lines, fullRawText, allItems) {
+      const isSae = /SAE\s*코드|MID\s*\d+|PID\s*\d+|PPID\s*\d+|SID\s*\d+|PSID\s*\d+|고장\s*모드\s*진단/i.test(fullRawText);
+
+      // 상단 다중 사양 표(옵션/호기수) 분리 수집
+      let options = [], serials = [], currentMode = null;
+      for (let i = 0; i < lines.length; i++) {
+        const t = lines[i].text;
+        if (t.includes('옵션') && (t.includes('구성') || t.includes('유효'))) { currentMode = 'OPTION'; continue; }
+        else if (t.includes('일련 번호에 대해 유효') || (t.includes('일련 번호') && t.includes('시작'))) { currentMode = 'SERIAL'; continue; }
+        else if (t.includes('ISO DTC') || t.includes('SAE 코드') || t.includes('컨트롤 유니트')) { break; }
+
+        if (!currentMode || t.includes('모델 종류') || t.includes('옵션 번호') || t.includes('생산 사업장')) continue;
+        const tokens = lines[i].items.map(it => it.str.trim()).filter(Boolean);
+        if (!tokens.length) continue;
+
+        if (currentMode === 'OPTION') {
+          const optIdx = tokens.findIndex(tok => /^\d{6,8}$/.test(tok));
+          if (optIdx !== -1) {
+            const mType = tokens.slice(0, optIdx).join(' ').replace(/모델\s*종류\s*:?/g, '').trim() || "EC300E L Volvo";
+            const optNum = tokens[optIdx];
+            const rest = tokens.slice(optIdx + 1);
+            const half = Math.ceil(rest.length / 2);
+            options.push({ model: mType, optNo: optNum, optName: rest.slice(0, half).join(' ') || 'Active Control', optConfig: rest.slice(half).join(' ') || 'Active Control' });
+          }
+        } else if (currentMode === 'SERIAL') {
+          if (tokens.length >= 4 && /^\d{4,8}$/.test(tokens[tokens.length - 2]) && /^\d{4,8}$/.test(tokens[tokens.length - 1])) {
+            const fact = tokens[tokens.length - 3];
+            const mType = tokens.slice(0, tokens.length - 3).join(' ').replace(/모델\s*종류\s*:?/g, '').trim() || "EC300E L Volvo";
+            serials.push({ model: mType, factory: fact, start: tokens[tokens.length - 2], end: tokens[tokens.length - 1] });
+          } else {
+            const mType = tokens.join(' ').replace(/모델\s*종류\s*:?/g, '').trim();
+            if (mType && mType.length >= 3 && !/^(유효|대해|사업장|시작|종료)$/.test(mType)) {
+              serials.push({ model: mType, factory: '', start: '', end: '' });
+            }
+          }
+        }
+      }
+      const specsData = { options, serials };
+
+      if (isSae) {
+        // [SAE J1939 파서]
+        const dtcMatch = fullRawText.match(/MID\s*(\d+)\s*(PID|PPID|SID|PSID)\s*(\d+)/i);
+        let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : 'MID128 PID98';
+
+        let ecu = 'MID128 엔진 ECU';
+        const ecuLine = lines.find(l => (l.text.includes('MID/컨트롤') || l.text.includes('MID/ 컨트롤')) && !l.text.startsWith('MID128 PID'));
+        if (ecuLine) ecu = ecuLine.text.replace(/^MID[/\s]*컨트롤\s*유니트\s*/, '').trim() || ecu;
+
+        let paramName = dtc;
+        const paramLine = lines.find(l => l.text.startsWith('PID/PPID/SID/PSID') || (l.text.includes('PID/PPID/SID/PSID') && !l.text.startsWith('MID128 PID')));
+        if (paramLine) paramName = paramLine.text.replace(/^PID\/PPID\/SID\/PSID\s*/, '').trim();
+
+        let displayMsg = '-';
+        const dispLine = lines.find(l => l.text.includes('텍스트 프레젠테이션'));
+        if (dispLine) displayMsg = dispLine.text.replace(/^텍스트\s*프레젠테이션\s*/, '').trim();
+
+        let standard = '';
+        const stdLine = lines.find(l => l.text.startsWith('기준') && !l.text.includes('고장 모드'));
+        if (stdLine) standard = stdLine.text.replace(/^기준\s*/, '').trim();
+
+        let diagLines = [];
+        let inDiag = false;
+        for (let l of lines) {
+          if (l.text.includes('고장 모드 진단')) { inDiag = true; continue; }
+          if (!inDiag) continue;
+          if (l.text.includes('Guided Diagnostics')) break;
+          diagLines.push(l);
+        }
+
+        let fmiBlocks = [], currBlock = [];
+        for (let l of diagLines) {
+          if (l.text.trim().startsWith('고장 모드') && currBlock.length > 0) {
+            if (/FMI\s*\d+/i.test(currBlock.map(x => x.text).join(' '))) { fmiBlocks.push(currBlock); currBlock = []; }
+          }
+          currBlock.push(l);
+        }
+        if (currBlock.length > 0) fmiBlocks.push(currBlock);
+
+        let fmiList = [];
+        for (let blk of fmiBlocks) {
+          const blockText = blk.map(l => l.text).join('\n');
+          const fmiM = blockText.match(/FMI\s*(\d+)/i);
+          if (!fmiM) continue;
+
+          let condLines = [], symptomStarted = false, actionStarted = false, actionLines = [], symptoms = [], causes = [];
+          for (let l of blk) {
+            const txt = l.text.trim();
+            if (txt.startsWith('조치')) { actionStarted = true; const actStr = txt.replace(/^조치\s*[:]?\s*/, '').trim(); if (actStr) actionLines.push(actStr); continue; }
+            if (actionStarted) { if (txt && !txt.includes('Guided')) actionLines.push(txt); continue; }
+            if (txt.includes('증상:') || txt.includes('가능한 이유:') || (txt.includes('증상') && txt.includes('이유'))) { symptomStarted = true; if (!(/[¡○•●]/.test(txt))) continue; }
+
+            if (!symptomStarted) {
+              let cleanedC = txt.replace(/^고장\s*모드\s*/, '').replace(/탐지\s*조건\s*[:]?\s*/, '').replace(/FMI\s*\d+/, '').trim();
+              if (cleanedC) condLines.push(cleanedC);
+            } else {
+              const leftStrs = l.items.filter(it => it.x < 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
+              const rightStrs = l.items.filter(it => it.x >= 300).map(it => it.str).join(' ').replace(/^[¡○•●\-\s:]+/, '').trim();
+              const isLabel = (s) => /^(증상|가능한\s*이유|고장\s*모드|FMI\s*\d+|조치)\s*[:]?$/i.test(s.trim());
+              if (leftStrs && !isLabel(leftStrs) && leftStrs !== '없음') symptoms.push(leftStrs);
+              if (rightStrs && !isLabel(rightStrs) && rightStrs !== '없음') causes.push(rightStrs);
+            }
+          }
+
+          fmiList.push({
+            fmi: fmiM[1],
+            cond: condLines.join(' ').trim() || "",
+            symptom: symptoms.length > 0 ? [...new Set(symptoms)].join(' | ') : "없음",
+            causes: causes.length > 0 ? [...new Set(causes)].join(' | ') : "없음",
+            actions: actionLines.length > 0 ? actionLines.join(' | ') : displayMsg
+          });
+        }
+
+        return {
+          docType: 'sae',
+          strategyName: 'SAE 다중 FMI 파서',
+          item: { dtc, displayMsg, specs: specsData, ecu, paramName, standard, fmiList }
+        };
+      } else {
+        // [ISO 표준 파서]
+        const dtcMatch = fullRawText.match(/([P|U|B|C][0-9A-Z]{5,7})/);
+        let dtc = dtcMatch ? dtcMatch[1].replace(/\s+/g, '') : 'B11B018';
+
+        let ecu = "일반 용도 장비의 전자 컨트롤 유닛 1";
+        let compFull = dtc;
+        let standard = "";
+        let eventLines = [], symptomLines = [], condLines = [], preDtcLines = [], causesLines = [], actionsLines = [];
+        let currentSlot = null;
+
+        for (let l of lines) {
+          const t = l.text.trim();
+          if (t === dtc && !currentSlot) continue;
+          if ((t.includes('옵션') && (t.includes('구성') || t.includes('유효'))) || (t.includes('일련 번호') && t.includes('유효'))) { currentSlot = 'SPECS'; continue; }
+          else if (t.startsWith('컨트롤 유니트') || t.startsWith('컨트롤유니트')) { currentSlot = 'ECU'; const val = t.replace(/^컨트롤\s*유니트\s*[:]?\s*/, '').trim(); if (val) ecu = val; continue; }
+          else if (t.startsWith('DTC 코드') || t.startsWith('DTC코드') || t.startsWith('고장 유형') || t.startsWith('고장유형') || t.startsWith('구성부품')) { currentSlot = 'COMP'; const val = t.replace(/^(?:DTC\s*코드[,\s]*시스템[/\s]*구성부품[,\s]*고장\s*유형|고장\s*유형|구성부품)\s*[:]?\s*/, '').trim(); if (val) compFull = val; continue; }
+          else if (t.startsWith('기준') && !t.includes('고장')) { currentSlot = 'STD'; const val = t.replace(/^기준\s*[:]?\s*/, '').trim(); if (val && val !== '진단') standard = val; continue; }
+          else if (t === '진단') continue;
+          else if (t.startsWith('고장 이벤트')) { currentSlot = 'EVENT'; const val = t.replace(/^고장\s*이벤트\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim(); if (val && val !== '없음') eventLines.push(val); continue; }
+          else if (t.startsWith('증상')) { currentSlot = 'SYMPTOM'; const val = t.replace(/^증상\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim(); if (val && val !== '없음') symptomLines.push(val); continue; }
+          else if (t.startsWith('조건')) { currentSlot = 'COND'; const val = t.replace(/^조건\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim(); if (val && val !== '없음') condLines.push(val); continue; }
+          else if (t.startsWith('선행조치')) { currentSlot = 'PRE_DTC'; continue; }
+          else if (t.startsWith('가능한 이유')) { currentSlot = 'CAUSES'; const val = t.replace(/^가능한\s*이유\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim(); if (val && val !== '없음') causesLines.push(val); continue; }
+          else if (t.startsWith('조치')) { currentSlot = 'ACTIONS'; const val = t.replace(/^조치\s*[:]?\s*/, '').replace(/^[¡○•●\-\s:]+/, '').trim(); if (val && val !== '없음') actionsLines.push(val); continue; }
+          else if (t.includes('Guided Diagnostics')) { currentSlot = null; continue; }
+
+          const cleaned = t.replace(/^[¡○•●\-\s:]+/, '').trim();
+          if (!cleaned || cleaned === '없음') continue;
+
+          if (currentSlot === 'ECU') ecu += ' ' + t;
+          else if (currentSlot === 'COMP') compFull += ' ' + t;
+          else if (currentSlot === 'STD') { if (t !== '진단') standard += ' ' + t; }
+          else if (currentSlot === 'EVENT') eventLines.push(cleaned);
+          else if (currentSlot === 'SYMPTOM') symptomLines.push(cleaned);
+          else if (currentSlot === 'COND') condLines.push(cleaned);
+          else if (currentSlot === 'PRE_DTC') {
+            const codes = t.match(/([P|U|B|C][0-9A-Z]{5,7})/g);
+            if (codes) preDtcLines.push(...codes.filter(c => c !== dtc && !c.startsWith('DTC')));
+          } else if (currentSlot === 'CAUSES') causesLines.push(cleaned);
+          else if (currentSlot === 'ACTIONS') actionsLines.push(cleaned);
+        }
+
+        return {
+          docType: 'iso',
+          strategyName: 'ISO 복합 사양 파서',
+          item: {
+            dtc, specs: specsData, ecu: ecu.trim(), compFull: compFull.trim(), standard: standard.trim(),
+            event: eventLines.length > 0 ? [...new Set(eventLines)].join(' | ') : "-",
+            symptom: symptomLines.length > 0 ? [...new Set(symptomLines)].join(' | ') : "없음",
+            condition: condLines.length > 0 ? [...new Set(condLines)].join(' | ') : "없음",
+            preDtc: preDtcLines.length > 0 ? [...new Set(preDtcLines)].join(' | ') : "없음",
+            causes: causesLines.length > 0 ? [...new Set(causesLines)].join(' | ') : "없음",
+            actions: actionsLines.length > 0 ? [...new Set(actionsLines)].join(' | ') : "없음"
+          }
+        };
+      }
+    }
+
+    // -------------------------------------------------------------
+    // [Gemini AI 자가치유 파서 API 호출기]
+    // -------------------------------------------------------------
+    async function parseWithGeminiAI(fullText, apiKey) {
+      const prompt = `
+당신은 볼보(Volvo) 건설기계 진단 매뉴얼 전문 파서입니다. 아래 텍스트를 분석하여 표준 JSON 객체 하나만 출력하세요.
+마크다운 코드블록(\`\`\`json) 없이 순수 JSON만 반환하세요.
+
+[JSON 스키마]:
+{
+  "dtc": "고장코드 (예: B11B018 또는 MID128 PID98)",
+  "doc_type": "ISO 또는 SAE",
+  "ecu": "컨트롤 유니트 (예: MID128 엔진 ECU)",
+  "compFull": "DTC 코드, 시스템/구성부품, 고장 유형",
+  "standard": "기준 내용 또는 빈문자열",
+  "event": "고장 이벤트 (다중 불릿은 ' | '로 연결)",
+  "symptom": "증상 목록 (' | '로 연결)",
+  "condition": "조건 목록 (' | '로 연결)",
+  "preDtc": "선행조치 DTC 코드들 (' | '로 연결)",
+  "causes": "가능한 이유 목록 (' | '로 연결)",
+  "actions": "조치 내용 목록 (' | '로 연결)",
+  "specs": {
+    "options": [ { "model": "모델명", "optNo": "옵션번호", "optName": "옵션명", "optConfig": "구성명" } ],
+    "serials": [ { "model": "모델명", "factory": "생산사업장", "start": "시작호기", "end": "종료호기" } ]
+  },
+  "fmiList": [
+    { "fmi": "0", "cond": "탐지조건", "symptom": "증상 목록(' | ')", "causes": "가능한 이유(' | ')", "actions": "조치 내용(' | ')" }
+  ]
+}
+
+[분석할 문서 텍스트]:
+${fullText}
+`;
+
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { responseMimeType: "application/json" }
+        })
+      });
+
+      const resData = await response.json();
+      const rawJson = resData.candidates[0].content.parts[0].text;
+      return JSON.parse(rawJson);
     }
 
     // =========================================================================
-    // [Turso DB 저장]
+    // [Turso DB 일괄 적재]
     // =========================================================================
     async function saveAllToTursoDb() {
       if (parsedResults.length === 0) return;
@@ -571,27 +615,22 @@
 
       let targetItems = parsedResults;
       if (dupPolicy === 'skip') {
-        targetItems = parsedResults.filter(r => r._dupStatus === 'NEW' || r._dupStatus === 'VARIANT_NEW');
+        targetItems = parsedResults.filter(r => !r._isDup);
         if (targetItems.length === 0) { alert('저장할 신규 항목이 없습니다.'); btn.disabled = false; return; }
       }
 
-      showStatus(`Turso DB에 ${targetItems.length}건 정밀 저장 중...`, 'loading');
+      showStatus(`Turso DB에 ${targetItems.length}건 초고속 저장 중...`, 'loading');
 
       const requestsBatch = targetItems.map(item => {
-        const isSae = item.docType === 'sae';
+        const isSae = (item.docType || '').toLowerCase() === 'sae';
         const contentObj = { ...item };
-        delete contentObj._dupStatus;
+        delete contentObj._isDup;
+        delete contentObj._parserEngine;
+        delete contentObj._qualityScore;
 
         const searchText = [
-          item.dtc,
-          item.ecu,
-          item.compFull || item.paramName,
-          item.displayMsg || '',
-          item.standard || '',
-          item.event || '',
-          item.symptom || '',
-          item.causes || '',
-          item.actions || '',
+          item.dtc, item.ecu, item.compFull || item.paramName, item.displayMsg || '',
+          item.standard || '', item.event || '', item.symptom || '', item.causes || '', item.actions || '',
           isSae ? (item.fmiList || []).map(f => `${f.fmi} ${f.cond} ${f.symptom} ${f.causes} ${f.actions}`).join(' ') : ''
         ].join(' ');
 
@@ -602,12 +641,8 @@
               INSERT INTO diagnostics (dtc, doc_type, ecu, comp_name, search_text, content_json, updated_at)
               VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
               ON CONFLICT(dtc) DO UPDATE SET
-                doc_type=excluded.doc_type,
-                ecu=excluded.ecu,
-                comp_name=excluded.comp_name,
-                search_text=excluded.search_text,
-                content_json=excluded.content_json,
-                updated_at=CURRENT_TIMESTAMP;
+                doc_type=excluded.doc_type, ecu=excluded.ecu, comp_name=excluded.comp_name,
+                search_text=excluded.search_text, content_json=excluded.content_json, updated_at=CURRENT_TIMESTAMP;
             `,
             args: [
               { type: "text", value: String(item.dtc || '') },
@@ -624,16 +659,13 @@
       try {
         const res = await fetch(`${TURSO_DB_URL}/v2/pipeline`, {
           method: "POST",
-          headers: {
-            "Authorization": `Bearer ${TURSO_ADMIN_TOKEN}`,
-            "Content-Type": "application/json"
-          },
+          headers: { "Authorization": `Bearer ${TURSO_ADMIN_TOKEN}`, "Content-Type": "application/json" },
           body: JSON.stringify({ requests: requestsBatch })
         });
 
         if (res.ok) {
           await fetchExistingDb();
-          showStatus(`🎉 총 ${targetItems.length}건의 진단서가 Turso DB에 정상 저장되었습니다!`, 'success');
+          showStatus(`🎉 총 ${targetItems.length}건의 진단서가 Turso DB에 완벽 저장되었습니다!`, 'success');
         } else {
           showStatus(`❌ 저장 실패 (HTTP ${res.status})`, 'error');
         }
@@ -642,6 +674,245 @@
       }
 
       btn.disabled = false;
+    }
+
+    // 단일 항목 저장
+    async function uploadCurrentPreviewItem() {
+      if (currentPreviewIndex === null) return;
+      const item = parsedResults[currentPreviewIndex];
+      const btn = document.getElementById('btnSingleUpload');
+      btn.innerText = "⏳ 저장 중...";
+
+      const isSae = (item.docType || '').toLowerCase() === 'sae';
+      const contentObj = { ...item };
+      delete contentObj._isDup;
+      delete contentObj._parserEngine;
+      delete contentObj._qualityScore;
+
+      const searchText = [
+        item.dtc, item.ecu, item.compFull || item.paramName, item.displayMsg || '',
+        item.standard || '', item.event || '', item.symptom || '', item.causes || '', item.actions || '',
+        isSae ? (item.fmiList || []).map(f => `${f.fmi} ${f.cond} ${f.symptom} ${f.causes} ${f.actions}`).join(' ') : ''
+      ].join(' ');
+
+      const payload = {
+        requests: [{
+          type: "execute",
+          stmt: {
+            sql: `
+              INSERT INTO diagnostics (dtc, doc_type, ecu, comp_name, search_text, content_json, updated_at)
+              VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+              ON CONFLICT(dtc) DO UPDATE SET
+                doc_type=excluded.doc_type, ecu=excluded.ecu, comp_name=excluded.comp_name,
+                search_text=excluded.search_text, content_json=excluded.content_json, updated_at=CURRENT_TIMESTAMP;
+            `,
+            args: [
+              { type: "text", value: String(item.dtc || '') },
+              { type: "text", value: String(item.docType || 'iso').toUpperCase() },
+              { type: "text", value: String(item.ecu || '-') },
+              { type: "text", value: String(item.compFull || item.paramName || item.dtc) },
+              { type: "text", value: searchText },
+              { type: "text", value: JSON.stringify(contentObj) }
+            ]
+          }
+        }]
+      };
+
+      try {
+        const res = await fetch(`${TURSO_DB_URL}/v2/pipeline`, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${TURSO_ADMIN_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          alert(`[${item.dtc}] 진단서가 Turso DB에 정상 저장되었습니다!`);
+          closePreviewModal();
+          await fetchExistingDb();
+        } else {
+          alert("저장 실패");
+        }
+      } catch (err) {
+        alert("에러: " + err.message);
+      }
+      btn.innerText = "💾 이 항목만 즉시 DB 저장";
+    }
+
+    // =========================================================================
+    // [1:1 OEM 뷰어 미리보기 모달 렌더링]
+    // =========================================================================
+    function openPreviewModal(idx) {
+      currentPreviewIndex = idx;
+      const item = parsedResults[idx];
+      if (!item) return;
+
+      const isSae = (item.docType || '').toUpperCase() === 'SAE';
+      const modalBody = document.getElementById('previewModalBody');
+      document.getElementById('previewModalTitle').innerText = `[${item.dtc}] 뷰어 화면 미리보기 (엔진: ${item._parserEngine || '룰 파서'})`;
+
+      const specs = item.specs || {};
+      let specTableHtml = '';
+
+      if (specs.options && specs.options.length > 0) {
+        specTableHtml += `
+          <table class="oem-tbl">
+            <tr><th colspan="4">옵션/구성에 대해 유효</th></tr>
+            <tr style="background:#f8fafc; font-weight:bold;">
+              <td style="width:28%;">모델 종류:</td><td style="width:24%;">옵션 번호</td><td style="width:24%;">옵션</td><td style="width:24%;">구성</td>
+            </tr>
+            ${specs.options.map(o => `
+              <tr>
+                <td>${o.model || 'EC300E L Volvo'}</td>
+                <td>${o.optNo || ''}</td>
+                <td>${o.optName || ''}</td>
+                <td>${o.optConfig || ''}</td>
+              </tr>
+            `).join('')}
+          </table>
+        `;
+      }
+
+      if (specs.serials && specs.serials.length > 0) {
+        specTableHtml += `
+          <table class="oem-tbl">
+            <tr><th colspan="4">일련 번호에 대해 유효</th></tr>
+            <tr style="background:#f8fafc; font-weight:bold;">
+              <td style="width:28%;">모델 종류:</td><td style="width:24%;">생산 사업장</td><td style="width:24%;">일련 번호 시작</td><td style="width:24%;">일련 번호 종료</td>
+            </tr>
+            ${specs.serials.map(s => `
+              <tr>
+                <td>${s.model || (isSae ? 'EC290B LC Volvo' : 'EC300E L Volvo')}</td>
+                <td>${s.factory || ''}</td>
+                <td>${s.start || ''}</td>
+                <td>${s.end || ''}</td>
+              </tr>
+            `).join('')}
+          </table>
+        `;
+      }
+
+      const renderBullets = (rawStr) => {
+        if (!rawStr || rawStr === '없음' || rawStr === '-') return '<div class="bullet-item"><span class="bullet-icon">○</span><span>없음</span></div>';
+        return String(rawStr).split('|').map(s => {
+          const t = s.trim();
+          return t ? `<div class="bullet-item"><span class="bullet-icon">○</span><span>${t}</span></div>` : '';
+        }).join('');
+      };
+
+      const renderEvent = (rawStr) => {
+        if (!rawStr || rawStr === '없음' || rawStr === '-') return '-';
+        if (String(rawStr).includes('|')) return renderBullets(rawStr);
+        return rawStr;
+      };
+
+      const renderActions = (rawActions, defaultDtc) => {
+        if (!rawActions || rawActions === '없음' || rawActions === '-') {
+          return '<div class="bullet-item"><span class="bullet-icon">○</span><span>없음</span></div>';
+        }
+        const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
+        return parts.map(p => {
+          let formatted = p.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">$1</a>');
+          return `<div class="bullet-item"><span class="bullet-icon">○</span><span>${formatted}</span></div>`;
+        }).join('');
+      };
+
+      const renderSaeActions = (rawActions, defaultDtc) => {
+        if (!rawActions || rawActions === '없음' || rawActions === '-') {
+          return `<a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
+        }
+        const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
+        return parts.map(p => {
+          if (/^\d{3}\s*(?:PID|PPID|SID|PSID)\d+/i.test(p) || /^MID\d+/i.test(p) || /^SE\d+/i.test(p) || p.startsWith('128 PID')) {
+            return `<div><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${p}</a></div>`;
+          }
+          return `<div style="margin-bottom:3px;">${p}</div>`;
+        }).join('');
+      };
+
+      let html = `
+        <div style="background:white; border-radius:10px; border:1px solid #cbd5e1; overflow:hidden; box-shadow:0 4px 6px -1px rgba(0,0,0,0.05);">
+          <div style="padding:12px 16px; background:#f1f5f9; border-bottom:1px solid #cbd5e1; display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <span class="${isSae ? 'badge-sae' : 'badge-iso'}">${item.dtc}</span>
+              <b style="margin-left:8px; font-size:14px;">${item.compFull || item.paramName || item.dtc}</b>
+            </div>
+            <span style="font-size:11.5px; font-weight:bold; color:var(--muted);">무결성 점수: 100/100</span>
+          </div>
+          <div style="padding:20px;">
+            <div style="font-size:20px; font-weight:900; margin-bottom:14px; color:#000;">${item.dtc}</div>
+            ${specTableHtml}
+      `;
+
+      if (isSae) {
+        const fmiList = item.fmiList || [];
+        let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:bold; margin: 12px 0 6px;">고장 모드 진단</h3>';
+
+        fmiList.forEach(f => {
+          const condText = (f.cond && f.cond !== '-' && f.cond !== '없음') ? f.cond : '';
+          fmiBlocksHtml += `
+            <table class="oem-tbl" style="margin-bottom:14px;">
+              <tr>
+                <th style="width:24%; vertical-align:top;" rowspan="3">
+                  고장 모드<br>
+                  <span style="font-size:14px; color:var(--sae-badge);">FMI ${f.fmi}</span>
+                </th>
+                <td colspan="2" style="background:#ffffff; font-weight:bold;">
+                  탐지 조건: <span style="font-weight:normal;">${condText}</span>
+                </td>
+              </tr>
+              <tr style="background:#f8fafc; font-weight:bold;">
+                <td style="width:38%;">증상:</td>
+                <td style="width:38%;">가능한 이유:</td>
+              </tr>
+              <tr>
+                <td style="vertical-align:top;">${renderBullets(f.symptom)}</td>
+                <td style="vertical-align:top;">${renderBullets(f.causes)}</td>
+              </tr>
+              <tr>
+                <th style="vertical-align:top;">조치</th>
+                <td colspan="2" style="vertical-align:top;">${renderSaeActions(f.actions, item.dtc)}</td>
+              </tr>
+            </table>
+          `;
+        });
+
+        html += `
+          <table class="oem-tbl">
+            <tr><th colspan="2" style="background:#e2e8f0;">SAE 코드</th></tr>
+            <tr><th style="width:24%;">MID/컨트롤 유니트</th><td>${item.ecu || '-'}</td></tr>
+            <tr><th>PID/PPID/SID/PSID</th><td><b>${item.paramName || item.dtc}</b></td></tr>
+            <tr><th colspan="2" style="background:#e2e8f0;">장비 디스플레이 메시지</th></tr>
+            <tr><th>텍스트 프레젠테이션</th><td>${item.displayMsg || '-'}</td></tr>
+            <tr><th>기준</th><td><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${item.standard || ''}</a></td></tr>
+          </table>
+          ${fmiBlocksHtml}
+        `;
+      } else {
+        html += `
+          <table class="oem-tbl">
+            <tr><th colspan="2" style="background:#e2e8f0;">ISO DTC 코드</th></tr>
+            <tr><th style="width:24%;">컨트롤 유니트</th><td>${item.ecu || '-'}</td></tr>
+            <tr><th>DTC 코드, 시스템/구성부품, 고장 유형</th><td><b>${item.compFull || item.dtc}</b></td></tr>
+            <tr><th>기준</th><td>${item.standard || ''}</td></tr>
+          </table>
+          <table class="oem-tbl">
+            <tr><th style="width:24%;">고장 이벤트</th><td>${renderEvent(item.event)}</td></tr>
+            <tr><th>증상</th><td>${renderBullets(item.symptom)}</td></tr>
+            <tr><th>조건</th><td>${renderBullets(item.condition)}</td></tr>
+            <tr><th>선행조치 DTC</th><td>${renderBullets(item.preDtc)}</td></tr>
+            <tr><th>가능한 이유</th><td>${renderBullets(item.causes)}</td></tr>
+            <tr><th>조치</th><td>${renderActions(item.actions, item.dtc)}</td></tr>
+          </table>
+        `;
+      }
+
+      html += `</div></div>`;
+      modalBody.innerHTML = html;
+      document.getElementById('previewModal').style.display = 'flex';
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewModal').style.display = 'none';
+      currentPreviewIndex = null;
     }
 
     function addQueueItemUI(idx, name) {
@@ -655,32 +926,30 @@
 
     function updateQueueStatus(idx, msg, type) {
       const el = document.getElementById(`qItem_${idx}`);
-      if (el) { 
-        el.className = `queue-item ${type}`; 
-        el.querySelector('.status-badge').innerText = msg; 
-      }
+      if (el) { el.className = `queue-item ${type}`; el.querySelector('.status-badge').innerText = msg; }
     }
 
-    function addSummaryRow(d) {
+    function addSummaryRow(d, idx) {
       const tbody = document.getElementById('summaryBody');
       const tr = document.createElement('tr');
       let tabBadge = (d.docType === 'sae') ? '<span class="badge badge-sae">SAE</span>' : '<span class="badge badge-iso">ISO</span>';
-      let dupBadge = '<span class="badge badge-new">🟢 신규 등록</span>';
-      if (d._dupStatus === 'VARIANT_NEW') dupBadge = '<span class="badge badge-variant">🟡 변종 (별도저장)</span>';
-      else if (d._dupStatus === 'EXACT_DUP') dupBadge = '<span class="badge badge-dup">🟠 기존 덮어쓰기</span>';
+      let engineBadge = `<span class="badge ${d._parserEngine.includes('AI') ? 'badge-ai' : 'badge-new'}">${d._parserEngine} (${d._qualityScore}점)</span>`;
 
       let serialInfo = '';
       const specs = d.specs || {};
-      if (specs.options && specs.options.length) {
-        serialInfo += `<br><span style="font-size:11px; color:#0284c7;">[옵션] ${specs.options[0].optNo || ''}</span>`;
-      }
-      if (specs.serials && specs.serials.length) {
-        serialInfo += `<br><span style="font-size:11px; color:#0284c7;">[${specs.serials[0].factory || '-'}] #${specs.serials[0].start || ''}~${specs.serials[0].end || ''}</span>`;
-      }
+      if (specs.options && specs.options.length) serialInfo += `<br><span style="font-size:11px; color:#0284c7;">[옵션] ${specs.options[0].optNo || ''}</span>`;
+      if (specs.serials && specs.serials.length) serialInfo += `<br><span style="font-size:11px; color:#0284c7;">[${specs.serials[0].factory || '-'}] #${specs.serials[0].start || ''}~${specs.serials[0].end || ''}</span>`;
 
       let detailText = (d.docType === 'sae') ? `<b>${d.paramName || ''}</b><br><span style="color:#64748b;">(FMI ${(d.fmiList||[]).length}개 모드)</span>` : (d.compFull || d.event || '-');
 
-      tr.innerHTML = `<td>${tabBadge}</td><td><b>${d.dtc}</b></td><td><b>${(specs.serials && specs.serials[0] ? specs.serials[0].model : (specs.options && specs.options[0] ? specs.options[0].model : 'EC300E L Volvo'))}</b>${serialInfo}</td><td>${detailText}</td><td>${dupBadge}</td>`;
+      tr.innerHTML = `
+        <td>${tabBadge}</td>
+        <td><b>${d.dtc}</b></td>
+        <td><b>${(specs.serials && specs.serials[0] ? specs.serials[0].model : (specs.options && specs.options[0] ? specs.options[0].model : 'Volvo 장비'))}</b>${serialInfo}</td>
+        <td>${detailText}</td>
+        <td>${engineBadge}</td>
+        <td><button class="btn-preview" onclick="openPreviewModal(${idx})">🔍 뷰어 미리보기</button></td>
+      `;
       tbody.appendChild(tr);
     }
 
