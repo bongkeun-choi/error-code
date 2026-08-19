@@ -106,21 +106,26 @@
       font-weight: 900;
       letter-spacing: -0.5px;
     }
-    .np-badge-n {
+    .volvo-logo-badge {
       background: white;
-      color: #03c75a;
-      width: 22px;
-      height: 22px;
-      border-radius: 6px;
+      color: #003057;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 13px;
-      font-weight: 900;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      flex-shrink: 0;
     }
-    html[data-theme="dark"] .np-badge-n {
-      background: #03c75a;
-      color: white;
+    .volvo-svg {
+      width: 17px;
+      height: 17px;
+    }
+    html[data-theme="dark"] .volvo-logo-badge {
+      background: #1e2530;
+      color: #38bdf8;
+      border: 1px solid #3e4756;
     }
     .np-header-right {
       display: flex;
@@ -637,7 +642,13 @@
   <!-- 🟢 상단 네이버페이 헤더 -->
   <div class="np-header">
     <div class="np-header-brand">
-      <span class="np-badge-n">N</span>
+      <span class="volvo-logo-badge" title="Volvo Construction Equipment">
+        <svg viewBox="0 0 100 100" class="volvo-svg">
+          <circle cx="46" cy="54" r="34" fill="none" stroke="currentColor" stroke-width="9"/>
+          <line x1="68" y1="32" x2="88" y2="12" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+          <polyline points="63,12 88,12 88,37" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
       <span>볼보 진단 매뉴얼</span>
     </div>
     <div class="np-header-right">
