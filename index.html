@@ -404,6 +404,21 @@
       font-weight: 800;
     }
     html[data-theme="dark"] .badge-model-np { color: #03c75a; }
+    .badge-ecu-tag {
+      background: var(--np-blue-light);
+      color: var(--np-blue);
+      border: 1px solid rgba(0, 119, 255, 0.25);
+      padding: 3px 8px;
+      border-radius: 7px;
+      font-size: 11.5px;
+      font-weight: 800;
+      word-break: break-all;
+    }
+    html[data-theme="dark"] .badge-ecu-tag {
+      color: #38bdf8;
+      background: rgba(0, 119, 255, 0.15);
+      border-color: rgba(56, 189, 248, 0.3);
+    }
 
     /* 펼침/접힘 인디케이터 */
     .expand-indicator {
@@ -1300,6 +1315,7 @@
               <div class="np-card-header-left">
                 <span class="${isSae ? 'badge-sae-np' : 'badge-dtc-np'}">${d.dtc}</span>
                 <span class="badge-model-np">🚜 ${d.model_name || 'Volvo'}</span>
+                ${(d.ecu || content.ecu) ? `<span class="badge-ecu-tag">📟 ${highlight(d.ecu || content.ecu, keyword)}</span>` : ''}
               </div>
               <div class="expand-indicator">
                 <span>펼치기</span>
