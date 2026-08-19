@@ -21,7 +21,7 @@
     .paste-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
     .kbd-badge { background: #0f172a; color: white; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-weight: bold; }
     
-    .option-box { background: #f1f5f9; padding: 12px 16px; border-radius: 8px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: gap: 10px; font-size: 13px; font-weight: 700; }
+    .option-box { background: #f1f5f9; padding: 12px 16px; border-radius: 8px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 13px; font-weight: 700; }
     .option-group { display: flex; align-items: center; gap: 12px; }
     .queue-card { display: none; }
     .queue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -62,7 +62,7 @@
       <div class="paste-zone" id="pasteZone" onclick="document.getElementById('fileInput').click()">
         <div class="paste-icon">📑</div>
         <div class="paste-title">파일 선택 / 드래그 또는 <span class="kbd-badge">Ctrl + V</span> 붙여넣기</div>
-        <div class="paste-desc">Y-Band 수직 구간 격리 엔진으로 EW145B, EW140E 등 모든 볼보 장비 진단서를 100% 원본 그대로 분석합니다.</div>
+        <div class="paste-desc">Y-Band 정밀 라인 엔진으로 모든 볼보 진단서를 100% 원본 그대로 분석합니다.</div>
         <input type="file" id="fileInput" multiple accept="application/pdf" style="display: none;">
       </div>
       <div class="option-box">
@@ -326,7 +326,7 @@
               }
 
               return {
-                modelType: parsedRows.length > 0 ? parsedRows.map(r => r.model).join(' | ') : (isSae ? 'EW145B Volvo' : 'EW140E Volvo'),
+                modelType: parsedRows.length > 0 ? parsedRows.map(r => r.model).join(' | ') : (isSae ? 'EC290B LC Volvo' : 'EW140E Volvo'),
                 factory: parsedRows.length > 0 ? parsedRows.map(r => r.factory).join(' | ') : '',
                 serialStart: parsedRows.length > 0 ? parsedRows.map(r => r.start).join(' | ') : '',
                 serialEnd: parsedRows.length > 0 ? parsedRows.map(r => r.end).join(' | ') : ''
@@ -340,7 +340,7 @@
               // [SAE J1939 엔진]
               // -------------------------------------------------------------
               const dtcMatch = fullRawText.match(/MID\s*(\d+)\s*(PID|PPID|SID|PSID)\s*(\d+)/i);
-              let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : (lines[0]?.text.match(/MID\s*\d+\s*(?:PID|PPID|SID|PSID)\s*\d+/i) || ['MID128 PID98'])[0];
+              let dtc = dtcMatch ? `MID${dtcMatch[1]} ${dtcMatch[2].toUpperCase()}${dtcMatch[3]}` : (lines[0]?.text.match(/MID\s*\d+\s*(?:PID|PPID|SID|PSID)\s*\d+/i) || ['MID128 PID107'])[0];
               dtc = dtc.replace(/\s+/g, ' ').toUpperCase();
 
               let ecu = 'MID128 엔진 ECU';
@@ -367,7 +367,7 @@
                 standard = stdLine.text.replace(/^기준\s*/, '').trim();
               }
 
-              // 다중 FMI 블록 분할 (탐지 조건 유실 원천 차단)
+              // 다중 FMI 블록 분할 (탐지 조건 유실 방지 및 다중 조치 분리)
               let diagLines = [];
               let inDiag = false;
               for (let i = 0; i < lines.length; i++) {
@@ -375,7 +375,7 @@
                 if (t.includes('고장 모드 진단')) { inDiag = true; continue; }
                 if (!inDiag) continue;
                 if (t.includes('Guided Diagnostics') || t.includes('주석:')) break;
-                diagLines.append ? diagLines.append(lines[i]) : diagLines.push(lines[i]);
+                diagLines.push(lines[i]);
               }
 
               let fmiBlocks = [];
