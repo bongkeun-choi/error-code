@@ -2,113 +2,599 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>볼보 진단 매뉴얼 뷰어</title>
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
     :root {
       --primary-dark: #0f172a;
       --accent: #0284c7;
+      --accent-light: #e0f2fe;
+      --accent-dark: #0369a1;
       --danger: #dc2626;
+      --danger-light: #fee2e2;
       --warning: #d97706;
+      --warning-light: #fef3c7;
+      --success: #16a34a;
+      --success-light: #dcfce7;
       --variant-purple: #7c3aed;
       --sae-badge: #c2410c;
       --bg: #f8fafc;
       --card-bg: #ffffff;
-      --border: #cbd5e1;
-      --text: #1e293b;
+      --border: #e2e8f0;
+      --border-strong: #cbd5e1;
+      --text: #0f172a;
       --muted: #64748b;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', sans-serif; }
-    body { background: var(--bg); color: var(--text); padding-bottom: 80px; }
+    * { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
+      -webkit-tap-highlight-color: transparent; 
+    }
+    body { 
+      background: var(--bg); 
+      color: var(--text); 
+      padding-bottom: 90px; 
+      -webkit-font-smoothing: antialiased; 
+    }
 
-    .header { background: var(--primary-dark); color: white; padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
-    .header h1 { font-size: 16px; font-weight: 800; }
-    .header-links { display: flex; align-items: center; gap: 12px; }
-    .header-links a { background: var(--accent); color: white; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: bold; text-decoration: none; }
-    .live-indicator { font-size: 11px; background: #059669; color: white; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+    /* 📱 모바일 최적화 헤더 */
+    .header { 
+      background: var(--primary-dark); 
+      color: white; 
+      padding: 12px 16px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      position: sticky; 
+      top: 0; 
+      z-index: 100; 
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12); 
+    }
+    .header-title { 
+      font-size: 16px; 
+      font-weight: 800; 
+      letter-spacing: -0.3px; 
+      display: flex; 
+      align-items: center; 
+      gap: 6px; 
+    }
+    .header-links { 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
+    .header-btn { 
+      background: rgba(255,255,255,0.12); 
+      color: white; 
+      padding: 6px 10px; 
+      border-radius: var(--radius-sm); 
+      font-size: 12px; 
+      font-weight: 700; 
+      text-decoration: none; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 4px;
+      border: 1px solid rgba(255,255,255,0.15);
+      transition: all 0.2s;
+    }
+    .header-btn:active { background: rgba(255,255,255,0.25); transform: scale(0.97); }
+    .live-indicator { 
+      font-size: 11px; 
+      background: rgba(16, 185, 129, 0.15); 
+      color: #34d399; 
+      border: 1px solid rgba(16, 185, 129, 0.35); 
+      padding: 3px 7px; 
+      border-radius: 20px; 
+      font-weight: 700; 
+      display: flex; 
+      align-items: center; 
+      gap: 4px; 
+    }
+    .live-dot { width: 6px; height: 6px; background: #34d399; border-radius: 50%; box-shadow: 0 0 8px #34d399; }
 
-    .container { max-width: 960px; margin: 16px auto; padding: 0 14px; }
-    .search-box { position: relative; margin-bottom: 12px; }
-    .search-input { width: 100%; padding: 14px 44px 14px 16px; font-size: 16px; font-weight: 700; border: 2px solid #94a3b8; border-radius: 12px; outline: none; background: white; }
-    .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.2); }
-    .clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 18px; color: var(--muted); background: none; border: none; cursor: pointer; display: none; }
+    .container { 
+      max-width: 960px; 
+      margin: 0 auto; 
+      padding: 12px 14px; 
+    }
 
-    .status { font-size: 13px; color: var(--muted); font-weight: 600; margin-bottom: 14px; display: flex; justify-content: space-between; }
+    /* 🔍 상단 고정형 모바일 검색바 & 퀵칩 */
+    .search-sticky-wrap {
+      background: var(--bg);
+      padding: 4px 0 10px 0;
+      position: sticky;
+      top: 50px;
+      z-index: 90;
+    }
+    .search-box { 
+      position: relative; 
+      display: flex;
+      align-items: center;
+      background: white;
+      border-radius: 14px;
+      border: 2px solid #cbd5e1;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      transition: all 0.2s ease;
+    }
+    .search-box:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 4px 20px rgba(2, 132, 199, 0.2);
+    }
+    .search-icon {
+      padding-left: 14px;
+      font-size: 17px;
+      color: var(--muted);
+      user-select: none;
+      display: flex;
+      align-items: center;
+    }
+    .search-input { 
+      width: 100%; 
+      padding: 13px 40px 13px 10px; 
+      font-size: 16px; 
+      font-weight: 700; 
+      border: none;
+      outline: none; 
+      background: transparent;
+      color: var(--text);
+    }
+    .search-input::placeholder {
+      font-size: 14px;
+      color: #94a3b8;
+      font-weight: 500;
+    }
+    .clear-btn { 
+      position: absolute; 
+      right: 10px; 
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      color: #475569;
+      border: none; 
+      cursor: pointer; 
+      display: none; 
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .clear-btn:active { background: #cbd5e1; }
 
-    .card { background: var(--card-bg); border: 1.5px solid var(--border); border-radius: 12px; margin-bottom: 24px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .card-header { padding: 10px 16px; background: #f1f5f9; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-    .card-actions { display: flex; gap: 6px; align-items: center; }
+    /* 🏷️ 퀵 필터 칩 (Quick Filter Chips) */
+    .chips-scroll-wrap {
+      margin-top: 8px;
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .chips-scroll-wrap::-webkit-scrollbar { display: none; }
+    .chip {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      background: white;
+      border: 1px solid var(--border-strong);
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .chip:active {
+      transform: scale(0.94);
+    }
+    .chip.active, .chip:hover {
+      background: #0284c7;
+      color: white;
+      border-color: #0284c7;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+    }
+
+    /* 📊 상태 표시줄 */
+    .status-bar { 
+      font-size: 12.5px; 
+      color: var(--muted); 
+      font-weight: 600; 
+      margin: 4px 2px 12px 2px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+    }
+
+    /* 📄 결과 카드 UI */
+    .card { 
+      background: var(--card-bg); 
+      border: 1px solid var(--border); 
+      border-radius: var(--radius-md); 
+      margin-bottom: 16px; 
+      overflow: hidden; 
+      box-shadow: 0 3px 10px rgba(0,0,0,0.04); 
+    }
+    .card-header { 
+      padding: 12px 14px; 
+      background: #f8fafc; 
+      border-bottom: 1px solid var(--border); 
+      display: flex; 
+      flex-direction: column;
+      gap: 10px;
+    }
+    @media (min-width: 640px) {
+      .card-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+      }
+    }
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-dtc { 
+      background: var(--danger); 
+      color: white; 
+      padding: 4px 10px; 
+      border-radius: 8px; 
+      font-weight: 900; 
+      font-size: 14px; 
+      letter-spacing: -0.2px;
+      box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+    }
+    .badge-sae-dtc { 
+      background: var(--sae-badge); 
+      color: white; 
+      padding: 4px 10px; 
+      border-radius: 8px; 
+      font-weight: 900; 
+      font-size: 14px; 
+      letter-spacing: -0.2px;
+      box-shadow: 0 2px 6px rgba(194, 65, 12, 0.25);
+    }
+    .badge-model-tag { 
+      background: #ede9fe; 
+      color: var(--variant-purple); 
+      border: 1px solid #ddd6fe; 
+      padding: 4px 9px; 
+      border-radius: 8px; 
+      font-size: 12px; 
+      font-weight: 800; 
+    }
+    .card-comp-name {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #1e293b;
+      word-break: break-word;
+    }
+
+    .card-actions { 
+      display: flex; 
+      gap: 6px; 
+      align-items: center; 
+      width: 100%;
+      justify-content: flex-end;
+    }
+    @media (min-width: 640px) {
+      .card-actions { width: auto; }
+    }
     
-    .badge-dtc { background: var(--danger); color: white; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; }
-    .badge-sae-dtc { background: var(--sae-badge); color: white; padding: 4px 10px; border-radius: 6px; font-weight: 900; font-size: 14px; }
-    .badge-model-tag { background: #ede9fe; color: var(--variant-purple); border: 1px solid #ddd6fe; padding: 3px 8px; border-radius: 6px; font-size: 12px; font-weight: 800; }
+    .btn-action { 
+      background: white; 
+      border: 1px solid var(--border-strong); 
+      padding: 6px 12px; 
+      border-radius: var(--radius-sm); 
+      font-size: 12px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      transition: 0.15s; 
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-action:active { transform: scale(0.96); background: #e2e8f0; }
+    .btn-copy { color: #334155; }
+    .btn-edit { color: var(--accent); border-color: #bae6fd; background: #f0f9ff; }
+    .btn-delete { color: var(--danger); border-color: #fecaca; background: #fef2f2; }
 
-    .btn-action { background: white; border: 1px solid var(--border); padding: 4px 9px; border-radius: 6px; font-size: 11.5px; font-weight: bold; cursor: pointer; transition: 0.15s; }
-    .btn-action:hover { background: #e2e8f0; }
-    .btn-edit { color: var(--accent); border-color: #bae6fd; }
-    .btn-edit:hover { background: #f0f9ff; }
-    .btn-delete { color: var(--danger); border-color: #fecaca; }
-    .btn-delete:hover { background: #fef2f2; }
+    /* 본문 시트 및 모바일 뷰 */
+    .oem-sheet { padding: 14px; font-size: 13.5px; }
+    .oem-title { 
+      font-size: 18px; 
+      font-weight: 900; 
+      margin-bottom: 12px; 
+      color: #0f172a; 
+      word-break: break-word; 
+      line-height: 1.3;
+    }
 
-    .oem-sheet { padding: 20px; font-size: 13px; }
-    .oem-title { font-size: 20px; font-weight: 900; margin-bottom: 14px; color: #000; }
-    .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 14px; }
-    .oem-tbl th, .oem-tbl td { border: 1px solid #000; padding: 6px 9px; vertical-align: top; line-height: 1.45; }
+    /* 🧱 모바일 반응형 정보 섹션 블록 */
+    .info-card-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .info-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+    }
+    .info-box.danger-accent {
+      background: #fff1f2;
+      border-color: #fecdd3;
+    }
+    .info-box.blue-accent {
+      background: #f0f9ff;
+      border-color: #bae6fd;
+    }
+    .info-box.warn-accent {
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .info-label {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--muted);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .info-box.danger-accent .info-label { color: #be123c; }
+    .info-box.blue-accent .info-label { color: #0369a1; }
+    .info-box.warn-accent .info-label { color: #b45309; }
+
+    .info-value {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: #1e293b;
+    }
+
+    /* 표 가로스크롤 지원 */
+    .oem-tbl-wrap {
+      overflow-x: auto;
+      margin-bottom: 12px;
+      border-radius: var(--radius-sm);
+      -webkit-overflow-scrolling: touch;
+    }
+    .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 12.5px; }
+    .oem-tbl th, .oem-tbl td { border: 1px solid #000; padding: 6px 8px; vertical-align: top; line-height: 1.4; }
     .oem-tbl th { background: #e2e8f0; font-weight: 800; text-align: left; }
     
-    .bullet-item { margin-bottom: 3px; display: flex; gap: 6px; align-items: flex-start; }
-    .bullet-icon { color: #000; font-weight: bold; }
-    .highlight { background-color: #fef08a; padding: 1px 3px; border-radius: 2px; font-weight: bold; }
-    .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); font-weight: bold; }
+    .bullet-item { margin-bottom: 4px; display: flex; gap: 6px; align-items: flex-start; line-height: 1.45; }
+    .bullet-icon { color: #0284c7; font-weight: bold; flex-shrink: 0; font-size: 11px; margin-top: 2px; }
+    .highlight { background-color: #fef08a; padding: 1px 3px; border-radius: 3px; font-weight: 800; }
+    
+    .empty-state { 
+      text-align: center; 
+      padding: 40px 16px; 
+      color: var(--muted); 
+      background: white; 
+      border-radius: var(--radius-md); 
+      border: 1px dashed var(--border-strong);
+      margin-top: 6px;
+    }
+    .empty-state-icon { font-size: 38px; margin-bottom: 8px; }
+    .empty-state-title { font-size: 16px; font-weight: 800; color: #1e293b; margin-bottom: 6px; }
+    .empty-state-desc { font-size: 13px; color: #64748b; line-height: 1.5; }
 
-    /* 수정 모달 */
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); z-index: 1000; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(2px); }
-    .modal-box { background: white; width: 100%; max-width: 800px; max-height: 90vh; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }
-    .modal-header { padding: 14px 20px; background: var(--primary-dark); color: white; display: flex; justify-content: space-between; align-items: center; }
-    .modal-body { padding: 20px; overflow-y: auto; flex: 1; background: #f8fafc; }
-    .modal-footer { padding: 12px 20px; background: white; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    /* FMI 고장 모드 모바일 카드 */
+    .fmi-card {
+      background: #fff;
+      border: 1.5px solid #fed7aa;
+      border-radius: var(--radius-sm);
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .fmi-header {
+      background: #ffedd5;
+      padding: 8px 12px;
+      font-weight: 800;
+      color: #9a3412;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+    .fmi-body { padding: 10px 12px; font-size: 13px; }
+
+    /* 상단 이동 플로팅 버튼 */
+    .scroll-top-btn {
+      position: fixed;
+      right: 16px;
+      bottom: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--primary-dark);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      z-index: 99;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .scroll-top-btn:active { transform: scale(0.9); }
+
+    /* 모바일 바텀시트 스타일 모달 */
+    .modal-overlay { 
+      display: none; 
+      position: fixed; 
+      inset: 0; 
+      background: rgba(15, 23, 42, 0.6); 
+      z-index: 1000; 
+      align-items: flex-end; 
+      justify-content: center; 
+      backdrop-filter: blur(4px); 
+    }
+    @media (min-width: 640px) {
+      .modal-overlay {
+        align-items: center;
+        padding: 16px;
+      }
+    }
+    .modal-box { 
+      background: white; 
+      width: 100%; 
+      max-width: 720px; 
+      max-height: 88vh; 
+      border-top-left-radius: 20px; 
+      border-top-right-radius: 20px; 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      box-shadow: 0 -10px 25px rgba(0, 0, 0, 0.2); 
+      animation: slideUp 0.25s ease-out;
+    }
+    @media (min-width: 640px) {
+      .modal-box {
+        border-radius: 16px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+        animation: fadeIn 0.2s ease-out;
+      }
+    }
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .modal-header { 
+      padding: 14px 18px; 
+      background: var(--primary-dark); 
+      color: white; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+    }
+    .modal-body { 
+      padding: 16px 18px; 
+      overflow-y: auto; 
+      flex: 1; 
+      background: #f8fafc; 
+      -webkit-overflow-scrolling: touch;
+    }
+    .modal-footer { 
+      padding: 12px 18px; 
+      background: white; 
+      border-top: 1px solid var(--border); 
+      display: flex; 
+      justify-content: flex-end; 
+      gap: 8px; 
+    }
 
     .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 11.5px; font-weight: bold; color: var(--muted); margin-bottom: 4px; }
-    .form-input { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; }
+    .form-group label { display: block; font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 5px; }
+    .form-input { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; outline: none; background: white; }
     .form-input:focus { border-color: var(--accent); }
-    .form-textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; outline: none; line-height: 1.4; resize: vertical; }
+    .form-textarea { width: 100%; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 8px; font-size: 14px; outline: none; line-height: 1.45; resize: vertical; background: white; }
+    .form-textarea:focus { border-color: var(--accent); }
   </style>
 </head>
 <body>
 
+  <!-- 상단 모바일 헤더 -->
   <div class="header">
-    <h1>🚜 볼보 진단 매뉴얼 뷰어</h1>
+    <div class="header-title">
+      <span>🚜</span>
+      <span>볼보 진단 매뉴얼</span>
+    </div>
     <div class="header-links">
-      <a href="upload.html">📤 진단서 업로더</a>
-      <div class="live-indicator">● Turso Edge Online</div>
+      <div class="live-indicator"><span class="live-dot"></span><span>Turso</span></div>
+      <a href="upload.html" class="header-btn">📤 업로더</a>
     </div>
   </div>
 
   <div class="container">
-    <div class="search-box">
-      <input type="text" id="searchInput" class="search-input" placeholder="고장코드 / 기종명(EW145B, EC300E) / 부품명 검색..." oninput="handleSearch()">
-      <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
+    <!-- 모바일 친화적 검색 및 필터 영역 -->
+    <div class="search-sticky-wrap">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="search" 
+          id="searchInput" 
+          class="search-input" 
+          placeholder="고장코드(SE2701, 111-1), 기종(EW145, EC300)..." 
+          autocomplete="off" 
+          autocapitalize="off"
+          spellcheck="false"
+          oninput="handleSearch()"
+        >
+        <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
+      </div>
+
+      <!-- 모바일 원터치 빠른 기종/코드 필터 칩 -->
+      <div class="chips-scroll-wrap">
+        <button class="chip" onclick="quickSearch('EW145')">🚜 EW145</button>
+        <button class="chip" onclick="quickSearch('EC300')">🚜 EC300</button>
+        <button class="chip" onclick="quickSearch('EC210')">🚜 EC210</button>
+        <button class="chip" onclick="quickSearch('EC480')">🚜 EC480</button>
+        <button class="chip" onclick="quickSearch('SE2701')">⚡ SE2701</button>
+        <button class="chip" onclick="quickSearch('MID 128')">📟 MID 128</button>
+        <button class="chip" onclick="quickSearch('111-')">🔧 111-</button>
+        <button class="chip" onclick="quickSearch('센서')">📡 센서</button>
+      </div>
     </div>
 
-    <div class="status" id="status">검색어를 2글자 이상 입력하세요.</div>
-    <div id="results"></div>
+    <!-- 상태 및 카운트 -->
+    <div class="status-bar" id="status">
+      <span>💡 검색어를 입력하거나 위 칩을 터치하세요.</span>
+    </div>
+
+    <!-- 검색 결과 목록 -->
+    <div id="results">
+      <div class="empty-state">
+        <div class="empty-state-icon">📱</div>
+        <div class="empty-state-title">모바일 현장 검색 지원</div>
+        <div class="empty-state-desc">
+          상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
+          굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- ✏️ 수정 모달 -->
-  <div class="modal-overlay" id="editModal">
-    <div class="modal-box">
+  <!-- ✏️ 수정 모달 (모바일 바텀시트 대응) -->
+  <div class="modal-overlay" id="editModal" onclick="handleModalOverlayClick(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
       <div class="modal-header">
-        <h3 id="editModalTitle" style="font-size:15px; font-weight:800;">진단서 내용 직접 수정</h3>
-        <button style="background:none; border:none; color:white; font-size:18px; cursor:pointer;" onclick="closeEditModal()">✕</button>
+        <h3 id="editModalTitle" style="font-size:15px; font-weight:800;">진단서 내용 수정</h3>
+        <button style="background:none; border:none; color:white; font-size:20px; cursor:pointer;" onclick="closeEditModal()">✕</button>
       </div>
       <div class="modal-body" id="editModalBody"></div>
       <div class="modal-footer">
-        <button class="btn-action" style="padding:8px 14px;" onclick="closeEditModal()">취소</button>
-        <button class="btn-action btn-edit" style="padding:8px 14px; background:var(--accent); color:white;" onclick="saveEditedRecord()">💾 수정 내용 저장</button>
+        <button class="btn-action" style="padding:10px 16px; font-size:13px;" onclick="closeEditModal()">취소</button>
+        <button class="btn-action btn-edit" style="padding:10px 16px; font-size:13px; background:var(--accent); color:white;" onclick="saveEditedRecord()">💾 저장하기</button>
       </div>
     </div>
   </div>
+
+  <!-- 맨 위로 가기 플로팅 버튼 -->
+  <button id="scrollTopBtn" class="scroll-top-btn" onclick="scrollToTop()">↑</button>
 
   <script>
     const TURSO_URL = "https://volvoerror-bongkeun-choi.aws-ap-northeast-1.turso.io/v2/pipeline";
@@ -118,18 +604,48 @@
     let currentSearchResults = [];
     let editingUniqueId = null;
 
+    // 플로팅 스크롤 버튼 제어
+    window.addEventListener('scroll', () => {
+      const btn = document.getElementById('scrollTopBtn');
+      if (window.scrollY > 250) {
+        btn.style.display = 'flex';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function quickSearch(keyword) {
+      const input = document.getElementById('searchInput');
+      input.value = keyword;
+      handleSearch();
+      input.blur();
+    }
+
     function handleSearch() {
       const q = document.getElementById('searchInput').value.trim();
-      document.getElementById('clearBtn').style.display = q ? 'block' : 'none';
+      document.getElementById('clearBtn').style.display = q ? 'flex' : 'none';
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => executeSearch(q), 100);
+      searchTimer = setTimeout(() => executeSearch(q), 120);
     }
 
     function clearSearch() {
       document.getElementById('searchInput').value = '';
       document.getElementById('clearBtn').style.display = 'none';
-      document.getElementById('results').innerHTML = '';
-      document.getElementById('status').innerText = '검색어를 2글자 이상 입력하세요.';
+      document.getElementById('results').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📱</div>
+          <div class="empty-state-title">모바일 현장 검색 지원</div>
+          <div class="empty-state-desc">
+            상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
+            굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.
+          </div>
+        </div>
+      `;
+      document.getElementById('status').innerHTML = '<span>💡 검색어를 입력하거나 위 칩을 터치하세요.</span>';
     }
 
     async function executeSearch(q) {
@@ -137,12 +653,18 @@
       const resultsEl = document.getElementById('results');
 
       if (q.length < 2) {
-        resultsEl.innerHTML = '';
-        statusEl.innerText = '검색어를 2글자 이상 입력하세요.';
+        resultsEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">💡</div>
+            <div class="empty-state-title">검색어를 2글자 이상 입력하세요</div>
+            <div class="empty-state-desc">예: EW145, EC300, SE2701, MID 128, 111</div>
+          </div>
+        `;
+        statusEl.innerHTML = '<span>검색어를 2글자 이상 입력하세요.</span>';
         return;
       }
 
-      statusEl.innerText = '⚡ Turso Edge DB 검색 중...';
+      statusEl.innerHTML = '<span>⚡ Turso Edge DB 검색 중...</span>';
       const start = performance.now();
       const qNoSpace = q.replace(/\s+/g, '');
 
@@ -190,7 +712,7 @@
 
         currentSearchResults = items;
         const elapsed = (performance.now() - start).toFixed(1);
-        statusEl.innerHTML = `<span>검색 결과 <b>${items.length}</b>건 (기종별 독립 표시)</span><span>응답속도: <b>${elapsed}ms</b></span>`;
+        statusEl.innerHTML = `<span>검색 결과 <b>${items.length}</b>건</span><span>응답 <b>${elapsed}ms</b></span>`;
         renderCards(items, q);
       } catch (e) {
         statusEl.innerHTML = `<span style="color:var(--danger)">⚠️ 검색 오류: ${e.message}</span>`;
@@ -221,6 +743,12 @@
       }
     }
 
+    function handleModalOverlayClick(e) {
+      if (e.target === document.getElementById('editModal')) {
+        closeEditModal();
+      }
+    }
+
     function openEditModal(uniqueId) {
       editingUniqueId = uniqueId;
       const target = currentSearchResults.find(d => d.unique_id === uniqueId);
@@ -229,7 +757,7 @@
       let content = {};
       try { content = JSON.parse(target.content_json); } catch(e) {}
 
-      document.getElementById('editModalTitle').innerText = `[${target.dtc}] 내용 직접 수정 (기종: ${target.model_name})`;
+      document.getElementById('editModalTitle').innerText = `[${target.dtc}] 진단서 내용 수정`;
       const isSae = (target.doc_type || '').toUpperCase() === 'SAE';
       const body = document.getElementById('editModalBody');
 
@@ -245,7 +773,7 @@
       } else {
         body.innerHTML = `
           <div class="form-group"><label>적용 기종명</label><input type="text" id="edit_model" class="form-input" value="${target.model_name || ''}"></div>
-          <div class="form-group"><label>컨트롤 유니트</label><input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}"></div>
+          <div class="form-group"><label>컨트롤 유니트 (ECU)</label><input type="text" id="edit_ecu" class="form-input" value="${content.ecu || target.ecu || ''}"></div>
           <div class="form-group"><label>DTC 코드 / 구성부품</label><input type="text" id="edit_comp" class="form-input" value="${content.compFull || target.comp_name || ''}"></div>
           <div class="form-group"><label>기준</label><input type="text" id="edit_std" class="form-input" value="${content.standard || ''}"></div>
           <div class="form-group"><label>고장 이벤트 (' | ' 구분)</label><textarea id="edit_event" class="form-textarea" rows="2">${content.event || ''}</textarea></div>
@@ -256,10 +784,12 @@
       }
 
       document.getElementById('editModal').style.display = 'flex';
+      document.body.style.overflow = 'hidden';
     }
 
     function closeEditModal() {
       document.getElementById('editModal').style.display = 'none';
+      document.body.style.overflow = '';
       editingUniqueId = null;
     }
 
@@ -278,7 +808,7 @@
         content.paramName = document.getElementById('edit_param').value.trim();
         content.displayMsg = document.getElementById('edit_disp').value.trim();
         content.standard = document.getElementById('edit_std').value.trim();
-        try { content.fmiList = JSON.parse(document.getElementById('edit_fmi_json').value); } catch(e) { alert('FMI JSON 오류'); return; }
+        try { content.fmiList = JSON.parse(document.getElementById('edit_fmi_json').value); } catch(e) { alert('FMI JSON 형식 오류입니다.'); return; }
       } else {
         content.ecu = document.getElementById('edit_ecu').value.trim();
         content.compFull = document.getElementById('edit_comp').value.trim();
@@ -333,7 +863,7 @@
 
     function highlight(text, keyword) {
       if (!text || !keyword) return text || '';
-      const regex = new RegExp(`(${keyword})`, 'gi');
+      const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
       return String(text).replace(regex, '<span class="highlight">$1</span>');
     }
 
@@ -342,7 +872,13 @@
       box.innerHTML = '';
 
       if (items.length === 0) {
-        box.innerHTML = '<div class="empty-state">일치하는 진단 매뉴얼 데이터가 없습니다.</div>';
+        box.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">일치하는 진단 매뉴얼이 없습니다</div>
+            <div class="empty-state-desc">다른 고장코드나 부품명, 기종명으로 검색해보세요.</div>
+          </div>
+        `;
         return;
       }
 
@@ -356,47 +892,51 @@
         let specTableHtml = '';
         if (specs.options && specs.options.length > 0) {
           specTableHtml += `
-            <table class="oem-tbl">
-              <tr><th colspan="4">옵션/구성에 대해 유효</th></tr>
-              <tr style="background:#f8fafc; font-weight:bold;">
-                <td style="width:28%;">모델 종류:</td><td style="width:24%;">옵션 번호</td><td style="width:24%;">옵션</td><td style="width:24%;">구성</td>
-              </tr>
-              ${specs.options.map(o => `
-                <tr>
-                  <td>${highlight(o.model || d.model_name, keyword)}</td>
-                  <td>${highlight(o.optNo || '', keyword)}</td>
-                  <td>${highlight(o.optName || '', keyword)}</td>
-                  <td>${highlight(o.optConfig || '', keyword)}</td>
+            <div class="oem-tbl-wrap">
+              <table class="oem-tbl">
+                <tr><th colspan="4" style="background:#e2e8f0;">⚙️ 옵션 / 구성 유효 범위</th></tr>
+                <tr style="background:#f8fafc; font-weight:bold;">
+                  <td>모델 종류</td><td>옵션 번호</td><td>옵션명</td><td>구성</td>
                 </tr>
-              `).join('')}
-            </table>
+                ${specs.options.map(o => `
+                  <tr>
+                    <td>${highlight(o.model || d.model_name, keyword)}</td>
+                    <td>${highlight(o.optNo || '', keyword)}</td>
+                    <td>${highlight(o.optName || '', keyword)}</td>
+                    <td>${highlight(o.optConfig || '', keyword)}</td>
+                  </tr>
+                `).join('')}
+              </table>
+            </div>
           `;
         }
 
         if (specs.serials && specs.serials.length > 0) {
           specTableHtml += `
-            <table class="oem-tbl">
-              <tr><th colspan="4">일련 번호에 대해 유효</th></tr>
-              <tr style="background:#f8fafc; font-weight:bold;">
-                <td style="width:28%;">모델 종류:</td><td style="width:24%;">생산 사업장</td><td style="width:24%;">일련 번호 시작</td><td style="width:24%;">일련 번호 종료</td>
-              </tr>
-              ${specs.serials.map(s => `
-                <tr>
-                  <td>${highlight(s.model || d.model_name, keyword)}</td>
-                  <td>${highlight(s.factory || '', keyword)}</td>
-                  <td>${highlight(s.start || '', keyword)}</td>
-                  <td>${highlight(s.end || '', keyword)}</td>
+            <div class="oem-tbl-wrap">
+              <table class="oem-tbl">
+                <tr><th colspan="4" style="background:#e2e8f0;">🔢 일련 번호 유효 범위</th></tr>
+                <tr style="background:#f8fafc; font-weight:bold;">
+                  <td>모델 종류</td><td>생산 사업장</td><td>시작 S/N</td><td>종료 S/N</td>
                 </tr>
-              `).join('')}
-            </table>
+                ${specs.serials.map(s => `
+                  <tr>
+                    <td>${highlight(s.model || d.model_name, keyword)}</td>
+                    <td>${highlight(s.factory || '', keyword)}</td>
+                    <td>${highlight(s.start || '', keyword)}</td>
+                    <td>${highlight(s.end || '', keyword)}</td>
+                  </tr>
+                `).join('')}
+              </table>
+            </div>
           `;
         }
 
         const renderBullets = (rawStr) => {
-          if (!rawStr || rawStr === '없음' || rawStr === '-') return '<div class="bullet-item"><span class="bullet-icon">○</span><span>없음</span></div>';
+          if (!rawStr || rawStr === '없음' || rawStr === '-') return '<div class="bullet-item"><span class="bullet-icon">•</span><span>없음</span></div>';
           return String(rawStr).split('|').map(s => {
             const t = s.trim();
-            return t ? `<div class="bullet-item"><span class="bullet-icon">○</span><span>${highlight(t, keyword)}</span></div>` : '';
+            return t ? `<div class="bullet-item"><span class="bullet-icon">•</span><span>${highlight(t, keyword)}</span></div>` : '';
           }).join('');
         };
 
@@ -408,26 +948,25 @@
 
         const renderActions = (rawActions, defaultDtc) => {
           if (!rawActions || rawActions === '없음' || rawActions === '-') {
-            return '<div class="bullet-item"><span class="bullet-icon">○</span><span>없음</span></div>';
+            return '<div class="bullet-item"><span class="bullet-icon">•</span><span>없음</span></div>';
           }
           const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
           return parts.map(p => {
             let formatted = highlight(p, keyword);
-            formatted = formatted.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">$1</a>');
-            return `<div class="bullet-item"><span class="bullet-icon">○</span><span>${formatted}</span></div>`;
+            formatted = formatted.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="javascript:void(0)" onclick="quickSearch(\'$1\')" style="color:#0284c7; font-weight:bold; text-decoration:underline;">$1</a>');
+            return `<div class="bullet-item"><span class="bullet-icon">🔧</span><span>${formatted}</span></div>`;
           }).join('');
         };
 
         const renderSaeActions = (rawActions, defaultDtc) => {
           if (!rawActions || rawActions === '없음' || rawActions === '-') {
-            return `<a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
+            return `<a href="javascript:void(0)" onclick="quickSearch('${defaultDtc}')" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
           }
           const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
           return parts.map(p => {
-            if (/^\d{3}\s*(?:PID|PPID|SID|PSID)\d+/i.test(p) || /^MID\d+/i.test(p) || /^SE\d+/i.test(p) || p.startsWith('128 PID')) {
-              return `<div><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(p, keyword)}</a></div>`;
-            }
-            return `<div style="margin-bottom:3px;">${highlight(p, keyword)}</div>`;
+            let itemHtml = highlight(p, keyword);
+            itemHtml = itemHtml.replace(/(\b\d{3}\s*(?:PID|PPID|SID|PSID)\d+\b|\bMID\d+\b|\bSE\d+\b)/gi, '<a href="javascript:void(0)" onclick="quickSearch(\'$1\')" style="color:#0284c7; font-weight:bold; text-decoration:underline;">$1</a>');
+            return `<div class="bullet-item"><span class="bullet-icon">🔧</span><span>${itemHtml}</span></div>`;
           }).join('');
         };
 
@@ -436,13 +975,13 @@
 
         const cardHeaderHtml = `
           <div class="card-header">
-            <div style="display:flex; align-items:center; gap:8px;">
+            <div class="card-badges">
               <span class="${isSae ? 'badge-sae-dtc' : 'badge-dtc'}">${d.dtc}</span>
               <span class="badge-model-tag">🚜 ${d.model_name || 'Volvo'}</span>
-              <b style="font-size:13.5px;">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</b>
+              <span class="card-comp-name">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</span>
             </div>
             <div class="card-actions">
-              <button class="btn-action" onclick="copyCard('${d.dtc}')">📋 복사</button>
+              <button class="btn-action btn-copy" onclick="copyCard('${d.dtc}', '${d.model_name}')">📋 복사</button>
               <button class="btn-action btn-edit" onclick="openEditModal('${d.unique_id}')">✏️ 수정</button>
               <button class="btn-action btn-delete" onclick="deleteRecord('${d.unique_id}', '${d.dtc}', '${d.model_name}')">🗑️ 삭제</button>
             </div>
@@ -451,34 +990,31 @@
 
         if (isSae) {
           const fmiList = content.fmiList || [];
-          let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:bold; margin: 12px 0 6px;">고장 모드 진단</h3>';
+          let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:800; margin: 14px 0 8px; color:#1e293b;">⚡ 고장 모드 진단 (FMI)</h3>';
 
           fmiList.forEach(f => {
             const condText = (f.cond && f.cond !== '-' && f.cond !== '없음') ? highlight(f.cond, keyword) : '';
             fmiBlocksHtml += `
-              <table class="oem-tbl" style="margin-bottom:14px;">
-                <tr>
-                  <th style="width:24%; vertical-align:top;" rowspan="3">
-                    고장 모드<br>
-                    <span style="font-size:14px; color:var(--sae-badge);">FMI ${f.fmi}</span>
-                  </th>
-                  <td colspan="2" style="background:#ffffff; font-weight:bold;">
-                    탐지 조건: <span style="font-weight:normal;">${condText}</span>
-                  </td>
-                </tr>
-                <tr style="background:#f8fafc; font-weight:bold;">
-                  <td style="width:38%;">증상:</td>
-                  <td style="width:38%;">가능한 이유:</td>
-                </tr>
-                <tr>
-                  <td style="vertical-align:top;">${renderBullets(f.symptom)}</td>
-                  <td style="vertical-align:top;">${renderBullets(f.causes)}</td>
-                </tr>
-                <tr>
-                  <th style="vertical-align:top;">조치</th>
-                  <td colspan="2" style="vertical-align:top;">${renderSaeActions(f.actions, d.dtc)}</td>
-                </tr>
-              </table>
+              <div class="fmi-card">
+                <div class="fmi-header">
+                  <span>🚨 고장 모드: FMI ${f.fmi}</span>
+                  ${condText ? `<span style="font-size:11.5px; font-weight:normal; background:rgba(0,0,0,0.06); padding:2px 6px; border-radius:4px;">탐지: ${condText}</span>` : ''}
+                </div>
+                <div class="fmi-body">
+                  <div style="margin-bottom:8px;">
+                    <div style="font-size:11.5px; font-weight:800; color:#d97706; margin-bottom:3px;">증상:</div>
+                    ${renderBullets(f.symptom)}
+                  </div>
+                  <div style="margin-bottom:8px;">
+                    <div style="font-size:11.5px; font-weight:800; color:#dc2626; margin-bottom:3px;">가능한 이유:</div>
+                    ${renderBullets(f.causes)}
+                  </div>
+                  <div>
+                    <div style="font-size:11.5px; font-weight:800; color:#0284c7; margin-bottom:3px;">조치 내용:</div>
+                    ${renderSaeActions(f.actions, d.dtc)}
+                  </div>
+                </div>
+              </div>
             `;
           });
 
@@ -486,15 +1022,30 @@
             ${cardHeaderHtml}
             <div class="oem-sheet">
               <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+              
+              <div class="info-card-group">
+                <div class="info-box blue-accent">
+                  <div class="info-label">📟 컨트롤 유니트 / 파라미터</div>
+                  <div class="info-value">
+                    <b>${highlight(content.ecu || d.ecu, keyword)}</b> 
+                    ${content.paramName ? ` / <b>${highlight(content.paramName, keyword)}</b>` : ''}
+                  </div>
+                </div>
+                ${content.displayMsg ? `
+                  <div class="info-box warn-accent">
+                    <div class="info-label">🖥️ 장비 디스플레이 메시지</div>
+                    <div class="info-value">${highlight(content.displayMsg, keyword)}</div>
+                  </div>
+                ` : ''}
+                ${content.standard ? `
+                  <div class="info-box">
+                    <div class="info-label">📐 기준</div>
+                    <div class="info-value"><a href="javascript:void(0)" onclick="quickSearch('${content.standard}')" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(content.standard, keyword)}</a></div>
+                  </div>
+                ` : ''}
+              </div>
+
               ${specTableHtml}
-              <table class="oem-tbl">
-                <tr><th colspan="2" style="background:#e2e8f0;">SAE 코드</th></tr>
-                <tr><th style="width:24%;">MID/컨트롤 유니트</th><td>${highlight(content.ecu || d.ecu, keyword)}</td></tr>
-                <tr><th>PID/PPID/SID/PSID</th><td><b>${highlight(content.paramName || d.comp_name, keyword)}</b></td></tr>
-                <tr><th colspan="2" style="background:#e2e8f0;">장비 디스플레이 메시지</th></tr>
-                <tr><th>텍스트 프레젠테이션</th><td>${highlight(content.displayMsg || '-', keyword)}</td></tr>
-                <tr><th>기준</th><td><a href="#" style="color:#0284c7; font-weight:bold; text-decoration:underline;">${highlight(content.standard || '', keyword)}</a></td></tr>
-              </table>
               ${fmiBlocksHtml}
             </div>
           `;
@@ -503,21 +1054,55 @@
             ${cardHeaderHtml}
             <div class="oem-sheet">
               <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+
+              <div class="info-card-group">
+                <div class="info-box blue-accent">
+                  <div class="info-label">📟 컨트롤 유니트 (ECU)</div>
+                  <div class="info-value"><b>${highlight(content.ecu || d.ecu, keyword)}</b></div>
+                </div>
+
+                <div class="info-box">
+                  <div class="info-label">🔍 시스템 / 구성부품 / 고장 유형</div>
+                  <div class="info-value"><b>${highlight(content.compFull || d.comp_name, keyword)}</b></div>
+                </div>
+
+                ${content.standard ? `
+                  <div class="info-box">
+                    <div class="info-label">📐 기준</div>
+                    <div class="info-value">${highlight(content.standard, keyword)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.event && content.event !== '-' && content.event !== '없음' ? `
+                  <div class="info-box warn-accent">
+                    <div class="info-label">⚠️ 고장 이벤트</div>
+                    <div class="info-value">${renderEvent(content.event)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.symptom && content.symptom !== '-' && content.symptom !== '없음' ? `
+                  <div class="info-box danger-accent">
+                    <div class="info-label">🚨 발생 증상</div>
+                    <div class="info-value">${renderBullets(content.symptom)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.causes && content.causes !== '-' && content.causes !== '없음' ? `
+                  <div class="info-box">
+                    <div class="info-label">❓ 가능한 이유</div>
+                    <div class="info-value">${renderBullets(content.causes)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.actions && content.actions !== '-' && content.actions !== '없음' ? `
+                  <div class="info-box blue-accent" style="border-left: 4px solid var(--accent);">
+                    <div class="info-label">🛠️ 조치 및 해결 방법</div>
+                    <div class="info-value">${renderActions(content.actions, d.dtc)}</div>
+                  </div>
+                ` : ''}
+              </div>
+
               ${specTableHtml}
-              <table class="oem-tbl">
-                <tr><th colspan="2" style="background:#e2e8f0;">ISO DTC 코드</th></tr>
-                <tr><th style="width:24%;">컨트롤 유니트</th><td>${highlight(content.ecu || d.ecu, keyword)}</td></tr>
-                <tr><th>DTC 코드, 시스템/구성부품, 고장 유형</th><td><b>${highlight(content.compFull || d.comp_name, keyword)}</b></td></tr>
-                <tr><th>기준</th><td>${highlight(content.standard || '', keyword)}</td></tr>
-              </table>
-              <table class="oem-tbl">
-                <tr><th style="width:24%;">고장 이벤트</th><td>${renderEvent(content.event)}</td></tr>
-                <tr><th>증상</th><td>${renderBullets(content.symptom)}</td></tr>
-                <tr><th>조건</th><td>${renderBullets(content.condition)}</td></tr>
-                <tr><th>선행조치 DTC</th><td>${renderBullets(content.preDtc)}</td></tr>
-                <tr><th>가능한 이유</th><td>${renderBullets(content.causes)}</td></tr>
-                <tr><th>조치</th><td>${renderActions(content.actions, d.dtc)}</td></tr>
-              </table>
             </div>
           `;
         }
@@ -526,9 +1111,13 @@
       });
     }
 
-    function copyCard(dtc) {
-      navigator.clipboard.writeText(`[볼보 고장코드 진단서] DTC: ${dtc}`);
-      alert(`[${dtc}] 고장코드가 클립보드에 복사되었습니다.`);
+    function copyCard(dtc, model) {
+      const copyText = `[볼보 진단 지침서] 기종: ${model} / DTC: ${dtc}`;
+      navigator.clipboard.writeText(copyText).then(() => {
+        alert(`[${dtc}] 고장코드 정보가 클립보드에 복사되었습니다.`);
+      }).catch(() => {
+        alert(`[${dtc}] 복사 완료`);
+      });
     }
   </script>
 </body>
