@@ -881,6 +881,77 @@
 
     let primarySearchResults = []; // 1차 검색 원본 결과
 
+    // 🎯 검색 정확도 가중치 정렬 (에러코드 일치 최우선 정렬)
+    function sortResultsByRelevance(items, query) {
+      if (!query || !items || items.length === 0) return items;
+      
+      const qClean = query.toUpperCase().replace(/[\s\-_]/g, '');
+      
+      return [...items].sort((a, b) => {
+        const getScore = (item) => {
+          let score = 0;
+          const dtcClean = String(item.dtc || '').toUpperCase().replace(/[\s\-_]/g, '');
+          const modelClean = String(item.model_name || '').toUpperCase().replace(/[\s\-_]/g, '');
+          const compClean = String(item.comp_name || '').toUpperCase().replace(/[\s\-_]/g, '');
+          
+          let content = {};
+          try { content = JSON.parse(item.content_json); } catch(e) {}
+          const paramClean = String(content.paramName || content.compFull || '').toUpperCase().replace(/[\s\-_]/g, '');
+          const ecuClean = String(item.ecu || content.ecu || '').toUpperCase().replace(/[\s\-_]/g, '');
+
+          // 1. 에러코드(DTC) 100% 완전 일치 (최우선 순위)
+          if (dtcClean === qClean) {
+            score += 10000;
+          }
+          // 2. 에러코드가 검색어로 시작하는 경우 (Prefix 일치)
+          else if (dtcClean.startsWith(qClean)) {
+            score += 5000;
+          }
+          // 3. 에러코드에 검색어가 포함된 경우
+          else if (dtcClean.includes(qClean)) {
+            score += 2000;
+          }
+
+          // 4. 부품명 / 파라미터명 일치
+          if (compClean === qClean || paramClean === qClean) {
+            score += 1500;
+          } else if (compClean.startsWith(qClean) || paramClean.startsWith(qClean)) {
+            score += 1000;
+          } else if (compClean.includes(qClean) || paramClean.includes(qClean)) {
+            score += 500;
+          }
+
+          // 5. 기종명 일치
+          if (modelClean === qClean) {
+            score += 800;
+          } else if (modelClean.startsWith(qClean)) {
+            score += 600;
+          } else if (modelClean.includes(qClean)) {
+            score += 300;
+          }
+
+          // 6. 컨트롤러(ECU) 일치
+          if (ecuClean.includes(qClean)) {
+            score += 200;
+          }
+
+          return score;
+        };
+
+        const scoreA = getScore(a);
+        const scoreB = getScore(b);
+
+        if (scoreA !== scoreB) {
+          return scoreB - scoreA; // 점수 높은 순 (내림차순)
+        }
+
+        // 동점인 경우: DTC 알파벳순 -> 기종명 순 정렬
+        const dtcCompare = String(a.dtc || '').localeCompare(String(b.dtc || ''));
+        if (dtcCompare !== 0) return dtcCompare;
+        return String(a.model_name || '').localeCompare(String(b.model_name || ''));
+      });
+    }
+
     function handleSecondSearch() {
       const subQ = (document.getElementById('secondSearchInput')?.value || '').trim();
       document.getElementById('clearSecondBtn').style.display = subQ ? 'flex' : 'none';
@@ -1000,7 +1071,16 @@
         const sql = `
           SELECT unique_id, dtc, model_name, doc_type, ecu, comp_name, content_json FROM diagnostics 
           WHERE dtc LIKE ? OR dtc LIKE ? OR model_name LIKE ? OR comp_name LIKE ? OR search_text LIKE ? OR search_text LIKE ?
-          LIMIT 25;
+          ORDER BY 
+            CASE 
+              WHEN UPPER(REPLACE(REPLACE(dtc, ' ', ''), '-', '')) = ? THEN 1
+              WHEN UPPER(dtc) LIKE ? THEN 2
+              WHEN UPPER(comp_name) LIKE ? THEN 3
+              ELSE 4
+            END,
+            dtc ASC,
+            model_name ASC
+          LIMIT 60;
         `;
         const payload = {
           requests: [{
@@ -1013,7 +1093,10 @@
                 { type: "text", value: `%${q}%` },
                 { type: "text", value: `%${q}%` },
                 { type: "text", value: `%${q}%` },
-                { type: "text", value: `%${qNoSpace}%` }
+                { type: "text", value: `%${qNoSpace}%` },
+                { type: "text", value: qNoSpace.toUpperCase() },
+                { type: "text", value: `${q.toUpperCase()}%` },
+                { type: "text", value: `%${q.toUpperCase()}%` }
               ]
             }
           }]
@@ -1027,7 +1110,7 @@
 
         const data = await res.json();
         const result = data.results[0]?.response?.result;
-        const items = [];
+        let items = [];
 
         if (result && result.rows) {
           const cols = result.cols.map(c => c.name);
@@ -1037,6 +1120,9 @@
             items.push(obj);
           });
         }
+
+        // 🎯 에러코드 일치도 가중치 정렬 실행
+        items = sortResultsByRelevance(items, q);
 
         primarySearchResults = items;
         currentSearchResults = items;
