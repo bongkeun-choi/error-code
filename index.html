@@ -258,6 +258,44 @@
       color: var(--text-muted);
       font-weight: 500;
     }
+
+    /* 🚜 2차 기종/모델 세부 검색창 (1차 검색창과 1:1 완벽 동일 규격 및 크기) */
+    .np-sub-search-box {
+      position: relative;
+      margin-top: 8px;
+      background: var(--card-bg);
+      border-radius: 16px;
+      border: 2px solid var(--np-blue);
+      box-shadow: 0 4px 16px rgba(0, 119, 255, 0.16);
+      display: none;
+      align-items: center;
+      transition: all 0.2s ease;
+      animation: fadeIn 0.25s ease-out;
+    }
+    html[data-theme="dark"] .np-sub-search-box {
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+    }
+    .np-sub-search-icon {
+      padding-left: 14px;
+      font-size: 17px;
+      color: var(--np-blue);
+      font-weight: bold;
+    }
+    .np-sub-search-input {
+      width: 100%;
+      padding: 14px 42px 14px 10px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+    }
+    .np-sub-search-input::placeholder {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
     .clear-btn {
       position: absolute;
       right: 12px;
@@ -688,7 +726,7 @@
           spellcheck="false"
           oninput="handleSecondSearch()"
         >
-        <button id="clearSecondBtn" class="clear-btn" style="right:8px; width:24px; height:24px; font-size:12px;" onclick="clearSecondSearch()">✕</button>
+        <button id="clearSecondBtn" class="clear-btn" onclick="clearSecondSearch()">✕</button>
       </div>
 
       <!-- 🏷️ 네이버페이 스타일 퀵 필터 칩 -->
@@ -900,6 +938,10 @@
     function handleSearch() {
       const q = document.getElementById('searchInput').value.trim();
       document.getElementById('clearBtn').style.display = q ? 'flex' : 'none';
+      if (q.length < 2) {
+        const subBox = document.getElementById('secondSearchBox');
+        if (subBox) subBox.style.display = 'none';
+      }
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => executeSearch(q), 120);
     }
@@ -936,6 +978,8 @@
       const bulkBtn = document.getElementById('bulkToggleBtn');
 
       if (q.length < 2) {
+        const subBox = document.getElementById('secondSearchBox');
+        if (subBox) subBox.style.display = 'none';
         resultsEl.innerHTML = `
           <div class="empty-state">
             <div class="empty-state-icon">💡</div>
