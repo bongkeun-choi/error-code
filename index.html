@@ -675,6 +675,22 @@
         <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
       </div>
 
+      <!-- 🚜 2차 기종/모델 세부 검색창 (1차 검색 결과 2건 이상 시 자동 표시) -->
+      <div class="np-sub-search-box" id="secondSearchBox" style="display:none;">
+        <span class="np-sub-search-icon">🚜</span>
+        <input 
+          type="search" 
+          id="secondSearchInput" 
+          class="np-sub-search-input" 
+          placeholder="결과 내 기종/차대번호(예: EC300, EW140, 17001) 2차 검색..." 
+          autocomplete="off" 
+          autocapitalize="off"
+          spellcheck="false"
+          oninput="handleSecondSearch()"
+        >
+        <button id="clearSecondBtn" class="clear-btn" style="right:8px; width:24px; height:24px; font-size:12px;" onclick="clearSecondSearch()">✕</button>
+      </div>
+
       <!-- 🏷️ 네이버페이 스타일 퀵 필터 칩 -->
       <div class="chips-scroll-wrap">
         <button class="np-chip" onclick="quickSearch('EW145')">🚜 EW145</button>
@@ -825,6 +841,55 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    let primarySearchResults = []; // 1차 검색 원본 결과
+
+    function handleSecondSearch() {
+      const subQ = (document.getElementById('secondSearchInput')?.value || '').trim();
+      document.getElementById('clearSecondBtn').style.display = subQ ? 'flex' : 'none';
+      const q = (document.getElementById('searchInput')?.value || '').trim();
+
+      if (!subQ) {
+        currentSearchResults = [...primarySearchResults];
+        document.getElementById('status').innerHTML = `검색 결과 <b>${primarySearchResults.length}</b>건`;
+        renderCards(primarySearchResults, q);
+        return;
+      }
+
+      const subQClean = subQ.toUpperCase().replace(/\s+/g, '');
+      const filtered = primarySearchResults.filter(item => {
+        let content = {};
+        try { content = JSON.parse(item.content_json); } catch(e) {}
+        const specs = content.specs || {};
+        const specStr = [
+          ...(specs.options || []).map(o => `${o.model} ${o.optNo} ${o.optName}`),
+          ...(specs.serials || []).map(s => `${s.model} ${s.factory} ${s.start} ${s.end}`)
+        ].join(' ');
+
+        const targetFull = [
+          item.model_name,
+          item.ecu,
+          content.ecu,
+          content.compFull,
+          content.paramName,
+          specStr,
+          item.search_text
+        ].join(' ').toUpperCase().replace(/\s+/g, '');
+
+        return targetFull.includes(subQClean);
+      });
+
+      currentSearchResults = filtered;
+      document.getElementById('status').innerHTML = `총 <b>${primarySearchResults.length}</b>건 중 [${subQ}] <b>${filtered.length}건</b> 일치`;
+      renderCards(filtered, q + ' ' + subQ);
+    }
+
+    function clearSecondSearch() {
+      const subInput = document.getElementById('secondSearchInput');
+      if (subInput) subInput.value = '';
+      document.getElementById('clearSecondBtn').style.display = 'none';
+      handleSecondSearch();
+    }
+
     function quickSearch(keyword) {
       const input = document.getElementById('searchInput');
       input.value = keyword;
@@ -842,6 +907,14 @@
     function clearSearch() {
       document.getElementById('searchInput').value = '';
       document.getElementById('clearBtn').style.display = 'none';
+      const subBox = document.getElementById('secondSearchBox');
+      if (subBox) subBox.style.display = 'none';
+      const subInput = document.getElementById('secondSearchInput');
+      if (subInput) subInput.value = '';
+      document.getElementById('clearSecondBtn').style.display = 'none';
+      primarySearchResults = [];
+      currentSearchResults = [];
+
       document.getElementById('results').innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">📱</div>
@@ -921,9 +994,22 @@
           });
         }
 
+        primarySearchResults = items;
         currentSearchResults = items;
         const elapsed = (performance.now() - start).toFixed(1);
         statusEl.innerHTML = `검색 결과 <b>${items.length}</b>건 (응답 <b>${elapsed}ms</b>)`;
+
+        const subBox = document.getElementById('secondSearchBox');
+        const subInput = document.getElementById('secondSearchInput');
+        if (subBox) {
+          if (items.length >= 2) {
+            subBox.style.display = 'flex';
+            if (subInput) subInput.value = '';
+            document.getElementById('clearSecondBtn').style.display = 'none';
+          } else {
+            subBox.style.display = 'none';
+          }
+        }
         
         if (items.length > 0) {
           bulkBtn.style.display = 'inline-flex';
