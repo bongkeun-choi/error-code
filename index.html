@@ -881,15 +881,14 @@
 
     let primarySearchResults = []; // 1차 검색 원본 결과
 
-    // 🎯 검색 정확도 가중치 정렬 (에러코드 일치 최우선 정렬)
+    // 🎯 검색 정확도 가중치 정렬 (에러코드 일치 최우선 & 자연 번호순 정렬)
     function sortResultsByRelevance(items, query) {
       if (!query || !items || items.length === 0) return items;
       
       const qClean = query.toUpperCase().replace(/[\s\-_]/g, '');
       
       return [...items].sort((a, b) => {
-        const getScore = (item) => {
-          let score = 0;
+        const getTierAndScore = (item) => {
           const dtcClean = String(item.dtc || '').toUpperCase().replace(/[\s\-_]/g, '');
           const modelClean = String(item.model_name || '').toUpperCase().replace(/[\s\-_]/g, '');
           const compClean = String(item.comp_name || '').toUpperCase().replace(/[\s\-_]/g, '');
@@ -899,55 +898,47 @@
           const paramClean = String(content.paramName || content.compFull || '').toUpperCase().replace(/[\s\-_]/g, '');
           const ecuClean = String(item.ecu || content.ecu || '').toUpperCase().replace(/[\s\-_]/g, '');
 
-          // 1. 에러코드(DTC) 100% 완전 일치 (최우선 순위)
-          if (dtcClean === qClean) {
-            score += 10000;
+          // [Tier 1: 50,000점 이상] 에러코드(DTC) 또는 파라미터명에 검색어가 직접 들어간 경우 (최우선 그룹)
+          if (dtcClean === qClean || paramClean === qClean) {
+            return 100000; // 완전 일치
           }
-          // 2. 에러코드가 검색어로 시작하는 경우 (Prefix 일치)
-          else if (dtcClean.startsWith(qClean)) {
-            score += 5000;
+          if (dtcClean.startsWith(qClean) || paramClean.startsWith(qClean)) {
+            return 80000; // 접두어 일치
           }
-          // 3. 에러코드에 검색어가 포함된 경우
-          else if (dtcClean.includes(qClean)) {
-            score += 2000;
+          if (dtcClean.includes(qClean) || paramClean.includes(qClean)) {
+            return 50000; // 에러코드 내 포함 (예: MID142 PSID4 -> PSID 포함)
           }
 
-          // 4. 부품명 / 파라미터명 일치
-          if (compClean === qClean || paramClean === qClean) {
-            score += 1500;
-          } else if (compClean.startsWith(qClean) || paramClean.startsWith(qClean)) {
-            score += 1000;
-          } else if (compClean.includes(qClean) || paramClean.includes(qClean)) {
-            score += 500;
-          }
+          // [Tier 2: 10,000점~30,000점] 부품명 / 구성부품명 매칭
+          if (compClean === qClean) return 30000;
+          if (compClean.startsWith(qClean)) return 20000;
+          if (compClean.includes(qClean)) return 10000;
 
-          // 5. 기종명 일치
-          if (modelClean === qClean) {
-            score += 800;
-          } else if (modelClean.startsWith(qClean)) {
-            score += 600;
-          } else if (modelClean.includes(qClean)) {
-            score += 300;
-          }
+          // [Tier 3: 4,000점~8,000점] 기종명 매칭
+          if (modelClean === qClean) return 8000;
+          if (modelClean.startsWith(qClean)) return 6000;
+          if (modelClean.includes(qClean)) return 4000;
 
-          // 6. 컨트롤러(ECU) 일치
-          if (ecuClean.includes(qClean)) {
-            score += 200;
-          }
+          // [Tier 4: 2,000점] 컨트롤 유니트(ECU) 매칭
+          if (ecuClean.includes(qClean)) return 2000;
 
-          return score;
+          // [Tier 5: 100점] 단순 본문/조치사항/설명 내 언급된 간접 연관 코드 (무조건 최하위)
+          return 100;
         };
 
-        const scoreA = getScore(a);
-        const scoreB = getScore(b);
+        const scoreA = getTierAndScore(a);
+        const scoreB = getTierAndScore(b);
 
         if (scoreA !== scoreB) {
-          return scoreB - scoreA; // 점수 높은 순 (내림차순)
+          return scoreB - scoreA; // 점수 높은 그룹 우선 (내림차순)
         }
 
-        // 동점인 경우: DTC 알파벳순 -> 기종명 순 정렬
-        const dtcCompare = String(a.dtc || '').localeCompare(String(b.dtc || ''));
+        // 동점인 경우 (예: 모두 PSID 코드인 경우):
+        // 1. DTC 번호순 자연어 정렬 (PSID 4 -> PSID 6 -> PSID 9 -> PSID 26 -> PSID 200 -> PSID 216...)
+        const dtcCompare = String(a.dtc || '').localeCompare(String(b.dtc || ''), undefined, { numeric: true, sensitivity: 'base' });
         if (dtcCompare !== 0) return dtcCompare;
+
+        // 2. 기종명 순 정렬
         return String(a.model_name || '').localeCompare(String(b.model_name || ''));
       });
     }
