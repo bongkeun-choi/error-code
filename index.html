@@ -522,6 +522,84 @@
 
 
 
+    /* 🔢 일련번호 & 옵션 접이식(Accordion) 박스 */
+    .spec-accordion-box {
+      background: var(--box-inner-bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      margin: 10px 0 14px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .spec-accordion-header {
+      padding: 10px 14px;
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: background 0.15s;
+    }
+    .spec-accordion-header:hover {
+      background: var(--chip-bg);
+    }
+    .spec-accordion-box.open .spec-accordion-header {
+      border-bottom-color: var(--border);
+    }
+    .spec-acc-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+      flex-wrap: wrap;
+    }
+    .spec-acc-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--chip-bg);
+      color: var(--np-blue);
+      border: 1px solid rgba(0, 119, 255, 0.25);
+    }
+    .spec-acc-badge.filtered {
+      background: var(--np-green-light);
+      color: var(--np-green-dark);
+      border-color: rgba(3, 199, 90, 0.35);
+    }
+    html[data-theme="dark"] .spec-acc-badge.filtered {
+      color: #03c75a;
+    }
+    .spec-acc-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .spec-acc-arrow {
+      transition: transform 0.2s;
+      font-size: 11px;
+    }
+    .spec-accordion-box.open .spec-acc-arrow {
+      transform: rotate(180deg);
+    }
+    .spec-accordion-body {
+      display: none;
+      padding: 6px 8px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .spec-accordion-box.open .spec-accordion-body {
+      display: block;
+    }
+
     .np-dtc-main-title {
       font-size: 17px;
       font-weight: 900;
@@ -834,6 +912,15 @@
     }
 
     // 카드 아코디언 토글 (개별)
+    // 일련번호 / 옵션 유효 범위 접기/펼치기 토글
+    function toggleSpecBox(boxId) {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      const isOpen = box.classList.toggle('open');
+      const txt = box.querySelector('.spec-acc-text');
+      if (txt) txt.innerText = isOpen ? '접기' : '펼치기';
+    }
+
     function toggleCard(cardId) {
       const card = document.getElementById(cardId);
       if (!card) return;
@@ -1186,44 +1273,116 @@
         snippet = snippet.split('|')[0].trim();
 
         let specTableHtml = '';
+        
+        // 검색어 토큰 분리 (기종 필터링용)
+        const searchTokens = (keyword || '').toUpperCase().split(/\s+/).map(t => t.trim()).filter(t => t.length >= 2);
+        
+        // ⚙️ 옵션 유효 범위 아코디언
         if (specs.options && specs.options.length > 0) {
+          const optBoxId = `optBox_${cardId}`;
+          let optRows = specs.options;
+          let isOptFiltered = false;
+
+          if (searchTokens.length > 0) {
+            const matchedOpts = specs.options.filter(o => {
+              const str = `${o.model} ${o.optNo} ${o.optName} ${o.optConfig}`.toUpperCase();
+              return searchTokens.some(tok => str.includes(tok));
+            });
+            if (matchedOpts.length > 0 && matchedOpts.length < specs.options.length) {
+              optRows = matchedOpts;
+              isOptFiltered = true;
+            }
+          }
+
+          const badgeText = isOptFiltered 
+            ? `🎯 검색 기종 관련 ${optRows.length}개 옵션 표시`
+            : `총 ${specs.options.length}개 옵션 사양`;
+
           specTableHtml += `
-            <div class="oem-tbl-wrap">
-              <table class="oem-tbl">
-                <tr><th colspan="4" style="background:var(--box-inner-bg);">⚙️ 옵션 / 구성 유효 범위</th></tr>
-                <tr style="font-weight:bold;">
-                  <td>모델 종류</td><td>옵션 번호</td><td>옵션명</td><td>구성</td>
-                </tr>
-                ${specs.options.map(o => `
-                  <tr>
-                    <td>${highlight(o.model || d.model_name, keyword)}</td>
-                    <td>${highlight(o.optNo || '', keyword)}</td>
-                    <td>${highlight(o.optName || '', keyword)}</td>
-                    <td>${highlight(o.optConfig || '', keyword)}</td>
-                  </tr>
-                `).join('')}
-              </table>
+            <div class="spec-accordion-box ${isOptFiltered ? 'open' : ''}" id="${optBoxId}">
+              <div class="spec-accordion-header" onclick="toggleSpecBox('${optBoxId}')">
+                <div class="spec-acc-left">
+                  <span>⚙️</span>
+                  <span>옵션 / 구성 유효 범위</span>
+                  <span class="spec-acc-badge ${isOptFiltered ? 'filtered' : ''}">${badgeText}</span>
+                </div>
+                <div class="spec-acc-right">
+                  <span class="spec-acc-text">${isOptFiltered ? '접기' : '펼치기'}</span>
+                  <span class="spec-acc-arrow">▾</span>
+                </div>
+              </div>
+              <div class="spec-accordion-body">
+                <div class="oem-tbl-wrap">
+                  <table class="oem-tbl">
+                    <tr style="font-weight:bold;">
+                      <td>모델 종류</td><td>옵션 번호</td><td>옵션명</td><td>구성</td>
+                    </tr>
+                    ${optRows.map(o => `
+                      <tr>
+                        <td><b>${highlight(o.model || d.model_name, keyword)}</b></td>
+                        <td>${highlight(o.optNo || '', keyword)}</td>
+                        <td>${highlight(o.optName || '', keyword)}</td>
+                        <td>${highlight(o.optConfig || '', keyword)}</td>
+                      </tr>
+                    `).join('')}
+                  </table>
+                </div>
+              </div>
             </div>
           `;
         }
 
+        // 🔢 일련 번호 유효 범위 아코디언
         if (specs.serials && specs.serials.length > 0) {
+          const serialBoxId = `serialBox_${cardId}`;
+          let serialRows = specs.serials;
+          let isSerialFiltered = false;
+
+          if (searchTokens.length > 0) {
+            const matchedSerials = specs.serials.filter(s => {
+              const str = `${s.model} ${s.factory} ${s.start} ${s.end}`.toUpperCase();
+              return searchTokens.some(tok => str.includes(tok));
+            });
+            if (matchedSerials.length > 0 && matchedSerials.length < specs.serials.length) {
+              serialRows = matchedSerials;
+              isSerialFiltered = true;
+            }
+          }
+
+          const badgeText = isSerialFiltered 
+            ? `🎯 검색 기종 관련 ${serialRows.length}개 차대번호 범위` 
+            : `총 ${specs.serials.length}개 모델 사양`;
+
           specTableHtml += `
-            <div class="oem-tbl-wrap">
-              <table class="oem-tbl">
-                <tr><th colspan="4" style="background:var(--box-inner-bg);">🔢 일련 번호 유효 범위</th></tr>
-                <tr style="font-weight:bold;">
-                  <td>모델 종류</td><td>생산 사업장</td><td>시작 S/N</td><td>종료 S/N</td>
-                </tr>
-                ${specs.serials.map(s => `
-                  <tr>
-                    <td>${highlight(s.model || d.model_name, keyword)}</td>
-                    <td>${highlight(s.factory || '', keyword)}</td>
-                    <td>${highlight(s.start || '', keyword)}</td>
-                    <td>${highlight(s.end || '', keyword)}</td>
-                  </tr>
-                `).join('')}
-              </table>
+            <div class="spec-accordion-box ${isSerialFiltered ? 'open' : ''}" id="${serialBoxId}">
+              <div class="spec-accordion-header" onclick="toggleSpecBox('${serialBoxId}')">
+                <div class="spec-acc-left">
+                  <span>🔢</span>
+                  <span>일련 번호 유효 범위</span>
+                  <span class="spec-acc-badge ${isSerialFiltered ? 'filtered' : ''}">${badgeText}</span>
+                </div>
+                <div class="spec-acc-right">
+                  <span class="spec-acc-text">${isSerialFiltered ? '접기' : '펼치기'}</span>
+                  <span class="spec-acc-arrow">▾</span>
+                </div>
+              </div>
+              <div class="spec-accordion-body">
+                <div class="oem-tbl-wrap">
+                  <table class="oem-tbl">
+                    <tr style="font-weight:bold;">
+                      <td>모델 종류</td><td>생산 사업장</td><td>시작 S/N</td><td>종료 S/N</td>
+                    </tr>
+                    ${serialRows.map(s => `
+                      <tr>
+                        <td><b>${highlight(s.model || d.model_name, keyword)}</b></td>
+                        <td>${highlight(s.factory || '', keyword)}</td>
+                        <td>${highlight(s.start || '', keyword)}</td>
+                        <td>${highlight(s.end || '', keyword)}</td>
+                      </tr>
+                    `).join('')}
+                  </table>
+                </div>
+              </div>
             </div>
           `;
         }
