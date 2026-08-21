@@ -1831,6 +1831,21 @@
         div.id = cardId;
 
         const isBasketed = !!basketMap[d.unique_id];
+        
+        let basketBtnHtml = '';
+        if (isBasketMode) {
+          basketBtnHtml = `
+            <button class="np-basket-btn remove-mode" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}')" title="모아보기 목록에서 제외">
+              <span>✕ 제외</span>
+            </button>
+          `;
+        } else {
+          basketBtnHtml = `
+            <button class="np-basket-btn ${isBasketed ? 'active' : ''}" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}')" title="진단서 바구니에 담기">
+              <span>${isBasketed ? '✓ 담김' : '+ 담기'}</span>
+            </button>
+          `;
+        }
 
         // 요약 헤더 HTML (간단하게 1~2줄 표시 + 담기 버튼)
         const summaryHeaderHtml = `
@@ -1842,9 +1857,7 @@
                 ${(d.ecu || content.ecu) ? `<span class="badge-ecu-tag">📟 ${highlight(d.ecu || content.ecu, keyword)}</span>` : ''}
               </div>
               <div class="np-header-actions">
-                <button class="np-basket-btn ${isBasketed ? 'active' : ''}" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}')" title="진단서 바구니에 담기">
-                  <span>${isBasketed ? '✓ 담김' : '+ 담기'}</span>
-                </button>
+                ${basketBtnHtml}
                 <div class="expand-indicator" onclick="event.stopPropagation(); toggleCard('${cardId}')">
                   <span>펼치기</span>
                   <span class="expand-arrow">▾</span>
@@ -2060,6 +2073,1768 @@
 
         box.appendChild(div);
       });
+
+      // 모아보기 모드일 때 하단에도 편리한 나가기 바 추가
+      if (isBasketMode && dataList.length > 0) {
+        const bottomBar = document.createElement('div');
+        bottomBar.className = 'basket-bottom-bar';
+        bottomBar.innerHTML = `
+          <div style="color:white; font-size:13px; font-weight:700;">
+            <span>📋 총 <b>${dataList.length}</b>건 확인 완료</span>
+          </div>
+          <button class="basket-exit-main-btn" style="padding:10px 18px; font-size:13.5px;" onclick="closeBasketView()">
+            <span>✕ 검색으로 나가기 (다른 코드 추가)</span>
+          </button>
+        `;
+        box.appendChild(bottomBar);
+      }
+    }
+
+    </script>
+</body>
+</html    /* 요약 1행: DTC 뱃지, 모델명, ECU, 버튼들 */
+    .np-summary-row1 {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .np-card-header-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      flex: 1;
+      min-width: 0;
+    }
+    .np-header-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .np-basket-btn {
+      background: var(--chip-bg);
+      border: 1.5px solid var(--border-strong);
+      color: var(--text-sub);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s;
+      white-space: nowrap !important;
+      word-break: keep-all;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .np-basket-btn:active { transform: scale(0.94); }
+    .np-basket-btn.active {
+      background: #03c75a !important;
+      color: #ffffff !important;
+      border-color: #03c75a !important;
+      box-shadow: 0 2px 8px rgba(3, 199, 90, 0.4);
+    }
+    .np-basket-btn.remove-mode {
+      background: var(--np-red-light) !important;
+      color: var(--np-red) !important;
+      border-color: rgba(244, 67, 54, 0.4) !important;
+    }
+    .np-basket-btn.remove-mode:hover {
+      background: #fee2e2 !important;
+    }
+
+    /* 📋 모아보기 모드 상단 고정 바 (Sticky Header) */
+    .basket-sticky-header {
+      position: sticky;
+      top: 56px;
+      z-index: 95;
+      background: linear-gradient(135deg, #03c75a 0%, #009e43 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 6px 20px rgba(3, 199, 90, 0.35);
+      gap: 10px;
+      animation: fadeIn 0.25s ease-out;
+    }
+    .basket-banner-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .basket-banner-badge {
+      background: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      font-size: 11.5px;
+      font-weight: 900;
+      padding: 3px 8px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+    .basket-banner-text {
+      font-size: 13.5px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .basket-exit-main-btn {
+      background: #ffffff;
+      color: #03c75a;
+      border: none;
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .basket-exit-main-btn:active { transform: scale(0.95); }
+
+    /* 모아보기 하단 고정 나가기 바 */
+    .basket-bottom-bar {
+      position: sticky;
+      bottom: 16px;
+      z-index: 95;
+      margin-top: 20px;
+      background: rgba(24, 27, 32, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 12px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      animation: slideUp 0.25s ease-out;
+    }
+    html[data-theme="naver"] .basket-bottom-bar {
+      background: rgba(20, 24, 30, 0.94);
+      border-color: rgba(3, 199, 90, 0.4);
+    }
+
+
+    /* 요약 2행: 부품명 & 간략 설명 */
+    .np-summary-row2 {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .np-comp-title {
+      font-size: 14.5px;
+      font-weight: 800;
+      color: var(--text);
+      word-break: break-word;
+      line-height: 1.35;
+    }
+    .np-summary-snippet {
+      font-size: 12.5px;
+      color: var(--text-sub);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 📖 상세 내용 영역 (기본적으로 숨김, expanded 클래스 시 노출) */
+    .np-card-detail {
+      display: none;
+      padding: 0 16px 16px;
+      border-top: 1px dashed var(--border-strong);
+      background: var(--card-bg);
+      animation: fadeIn 0.2s ease-out;
+    }
+    .np-card.expanded .np-card-detail {
+      display: block;
+    }
+
+
+
+    /* 🔢 일련번호 & 옵션 접이식(Accordion) 박스 */
+    .spec-accordion-box {
+      background: var(--box-inner-bg);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      margin: 10px 0 14px;
+      overflow: hidden;
+      transition: all 0.2s;
+    }
+    .spec-accordion-header {
+      padding: 10px 14px;
+      background: var(--card-bg);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      border-bottom: 1px solid transparent;
+      transition: background 0.15s;
+    }
+    .spec-accordion-header:hover {
+      background: var(--chip-bg);
+    }
+    .spec-accordion-box.open .spec-accordion-header {
+      border-bottom-color: var(--border);
+    }
+    .spec-acc-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text);
+      flex-wrap: wrap;
+    }
+    .spec-acc-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+      background: var(--chip-bg);
+      color: var(--np-blue);
+      border: 1px solid rgba(0, 119, 255, 0.25);
+    }
+    .spec-acc-badge.filtered {
+      background: var(--np-green-light);
+      color: var(--np-green-dark);
+      border-color: rgba(3, 199, 90, 0.35);
+    }
+    html[data-theme="dark"] .spec-acc-badge.filtered {
+      color: #03c75a;
+    }
+    .spec-acc-right {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+    .spec-acc-arrow {
+      transition: transform 0.2s;
+      font-size: 11px;
+    }
+    .spec-accordion-box.open .spec-acc-arrow {
+      transform: rotate(180deg);
+    }
+    .spec-accordion-body {
+      display: none;
+      padding: 6px 8px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .spec-accordion-box.open .spec-accordion-body {
+      display: block;
+    }
+
+    .np-dtc-main-title {
+      font-size: 17px;
+      font-weight: 900;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.35;
+      letter-spacing: -0.3px;
+    }
+
+    /* 네이버페이 섹션 정보 박스 */
+    .np-info-section {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .np-info-tile {
+      background: var(--box-inner-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .np-info-tile.action-tile {
+      background: var(--np-blue-light);
+      border-left: 4px solid var(--np-blue);
+      border-color: rgba(0, 119, 255, 0.25);
+    }
+    .np-info-tile.danger-tile {
+      background: var(--np-red-light);
+      border-left: 4px solid var(--np-red);
+      border-color: rgba(244, 67, 54, 0.25);
+    }
+    .np-info-tile.warn-tile {
+      background: var(--np-orange-light);
+      border-left: 4px solid var(--np-orange);
+      border-color: rgba(255, 149, 0, 0.25);
+    }
+    .np-tile-label {
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .np-info-tile.action-tile .np-tile-label { color: var(--np-blue); }
+    .np-info-tile.danger-tile .np-tile-label { color: var(--np-red); }
+    .np-info-tile.warn-tile .np-tile-label { color: var(--np-orange); }
+
+    .np-tile-body {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    /* FMI 스마트 카드 */
+    .np-fmi-box {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-strong);
+      border-radius: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .np-fmi-top {
+      background: var(--np-orange-light);
+      padding: 10px 14px;
+      font-weight: 800;
+      color: var(--np-orange);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 149, 0, 0.2);
+    }
+    .np-fmi-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* OEM 원본 표 모드 스타일 */
+    .oem-sheet { padding-top: 10px; font-size: 13px; }
+    .oem-title { font-size: 17px; font-weight: 900; margin-bottom: 12px; color: var(--text); }
+    .oem-tbl-wrap { overflow-x: auto; margin-bottom: 14px; -webkit-overflow-scrolling: touch; }
+    .oem-tbl { width: 100%; border-collapse: collapse; border: 1.5px solid var(--border-strong); font-size: 12.5px; }
+    .oem-tbl th, .oem-tbl td { border: 1px solid var(--border); padding: 7px 10px; vertical-align: top; line-height: 1.45; }
+    .oem-tbl th { background: var(--box-inner-bg); font-weight: 800; text-align: left; color: var(--text); }
+    html[data-theme="dark"] .oem-tbl { border-color: #3e4756; }
+    html[data-theme="dark"] .oem-tbl th, html[data-theme="dark"] .oem-tbl td { border-color: #2d343f; }
+
+    /* 글머리 기호 및 하이라이트 */
+    .bullet-item { margin-bottom: 4px; display: flex; gap: 6px; align-items: flex-start; line-height: 1.45; }
+    .bullet-icon { color: var(--np-green); font-weight: bold; flex-shrink: 0; font-size: 12px; margin-top: 2px; }
+    .highlight { background-color: var(--highlight); color: #000; padding: 1px 3px; border-radius: 3px; font-weight: 800; }
+    html[data-theme="dark"] .highlight { color: #fff; }
+
+    /* 비어있는 상태 UI */
+    .empty-state {
+      text-align: center;
+      padding: 48px 16px;
+      color: var(--text-muted);
+      background: var(--card-bg);
+      border-radius: 18px;
+      border: 1px dashed var(--border-strong);
+      margin-top: 10px;
+    }
+    .empty-state-icon { font-size: 40px; margin-bottom: 10px; }
+    .empty-state-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .empty-state-desc { font-size: 13px; color: var(--text-sub); line-height: 1.5; }
+
+    /* 상단 이동 플로팅 버튼 */
+    /* 📋 진단서 담기(Basket) 버튼 & 플로팅 바 & 모아보기 뷰 스타일 */
+    /* 📋 모아보기 모드 전용 상단 배너 & 퇴장 버튼 */
+    .basket-mode-banner {
+      background: linear-gradient(135deg, #03c75a 0%, #009e43 100%);
+      color: white;
+      border-radius: 16px;
+      padding: 14px 18px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 6px 20px rgba(3, 199, 90, 0.3);
+      gap: 12px;
+      flex-wrap: wrap;
+      animation: fadeIn 0.25s ease-out;
+    }
+    .basket-banner-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .basket-banner-badge {
+      background: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      font-size: 12px;
+      font-weight: 900;
+      padding: 3px 9px;
+      border-radius: 20px;
+    }
+    .basket-banner-text {
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .basket-exit-main-btn {
+      background: #ffffff;
+      color: #03c75a;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 13.5px;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .basket-exit-main-btn:active { transform: scale(0.95); }
+    .basket-exit-main-btn:hover { background: #f0fdf4; }
+
+    .np-header-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .np-basket-btn {
+      background: var(--chip-bg);
+      border: 1.5px solid var(--border-strong);
+      color: var(--text-sub);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .np-basket-btn:active { transform: scale(0.94); }
+    .np-basket-btn.active {
+      background: var(--np-green);
+      color: white;
+      border-color: var(--np-green);
+      box-shadow: 0 2px 8px rgba(3, 199, 90, 0.35);
+    }
+
+    /* 하단 고정 플로팅 바 */
+    .np-basket-float-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 680px;
+      background: rgba(24, 27, 32, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: white;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      z-index: 999;
+      animation: slideUp 0.25s ease-out;
+      padding: 10px 14px;
+    }
+    html[data-theme="naver"] .np-basket-float-bar {
+      background: rgba(20, 24, 30, 0.94);
+      box-shadow: 0 10px 30px rgba(3, 199, 90, 0.25);
+      border: 1.5px solid rgba(3, 199, 90, 0.4);
+    }
+    .np-basket-float-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .np-basket-float-left {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .np-basket-title {
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+    }
+    .np-basket-clear-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-left: 6px;
+      padding: 0;
+    }
+    .np-basket-clear-btn:hover { color: #f87171; }
+    .np-basket-chips-scroll {
+      display: flex;
+      gap: 5px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    .np-basket-chips-scroll::-webkit-scrollbar { display: none; }
+    .np-basket-mini-chip {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f1f5f9;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .np-basket-mini-remove {
+      cursor: pointer;
+      color: #cbd5e1;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    .np-basket-mini-remove:hover { color: #f87171; }
+    .np-basket-open-btn {
+      background: var(--np-green);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 13.5px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(3, 199, 90, 0.4);
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .np-basket-open-btn:active { transform: scale(0.95); }
+
+    /* 모아보기 화면 상단 바 */
+    .basket-view-top-bar {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-strong);
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    }
+    .basket-back-btn {
+      background: var(--chip-bg);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      font-size: 12.5px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .basket-view-title {
+      font-size: 14.5px;
+      font-weight: 900;
+      color: var(--np-green);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scroll-top-btn {
+      position: fixed;
+      right: 16px;
+      bottom: 20px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: var(--np-green);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 16px rgba(3, 199, 90, 0.4);
+      cursor: pointer;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      z-index: 99;
+      transition: all 0.2s;
+    }
+    .scroll-top-btn:active { transform: scale(0.9); }
+
+
+  </style>
+</head>
+<body>
+
+  <!-- 🟢 상단 볼보 헤더 -->
+  <div class="np-header">
+    <div class="np-header-brand">
+      <span class="volvo-logo-badge" title="Volvo Construction Equipment">
+        <svg viewBox="0 0 100 100" class="volvo-svg">
+          <circle cx="46" cy="54" r="34" fill="none" stroke="currentColor" stroke-width="9"/>
+          <line x1="68" y1="32" x2="88" y2="12" stroke="currentColor" stroke-width="9" stroke-linecap="round"/>
+          <polyline points="63,12 88,12 88,37" fill="none" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span>볼보 진단 매뉴얼</span>
+    </div>
+    <div class="np-header-right">
+      <a href="upload.html" class="np-btn-uploader">📤 업로더</a>
+    </div>
+  </div>
+
+  <!-- 🎛️ 뷰 모드 및 야간 모드 전환 바 -->
+  <div class="mode-switch-container">
+    <div class="segment-tabs">
+      <button class="seg-tab active" id="tabCardView" onclick="setViewMode('card')">
+        <span>📱 스마트 카드</span>
+      </button>
+      <button class="seg-tab" id="tabTableView" onclick="setViewMode('table')">
+        <span>📄 원본 OEM 표</span>
+      </button>
+    </div>
+
+    <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleDarkMode()">
+      <span id="themeIcon">🌙</span>
+      <span id="themeText">야간 모드</span>
+    </button>
+  </div>
+
+  <div class="container">
+    <!-- 🔍 상단 고정형 네이버페이 검색 영역 -->
+    <div class="search-sticky-wrap">
+      <div class="np-search-box">
+        <span class="np-search-icon">🔍</span>
+        <input 
+          type="search" 
+          id="searchInput" 
+          class="np-search-input" 
+          placeholder="고장코드(SE2701, 111-1), 기종(EW145, EC300)..." 
+          autocomplete="off" 
+          autocapitalize="off"
+          spellcheck="false"
+          oninput="handleSearch()"
+        >
+        <button id="clearBtn" class="clear-btn" onclick="clearSearch()">✕</button>
+      </div>
+
+      <!-- 🚜 2차 기종/모델 세부 검색창 (1차 검색 결과 2건 이상 시 자동 표시) -->
+      <div class="np-sub-search-box" id="secondSearchBox" style="display:none;">
+        <span class="np-sub-search-icon">🚜</span>
+        <input 
+          type="search" 
+          id="secondSearchInput" 
+          class="np-sub-search-input" 
+          placeholder="결과 내 기종/차대번호(예: EC300, EW140, 17001) 2차 검색..." 
+          autocomplete="off" 
+          autocapitalize="off"
+          spellcheck="false"
+          oninput="handleSecondSearch()"
+        >
+        <button id="clearSecondBtn" class="clear-btn" onclick="clearSecondSearch()">✕</button>
+      </div>
+
+      <!-- 🏷️ 네이버페이 스타일 퀵 필터 칩 -->
+      <div class="chips-scroll-wrap">
+        <button class="np-chip" onclick="quickSearch('EW145')">🚜 EW145</button>
+        <button class="np-chip" onclick="quickSearch('EC300')">🚜 EC300</button>
+        <button class="np-chip" onclick="quickSearch('EC210')">🚜 EC210</button>
+        <button class="np-chip" onclick="quickSearch('EC480')">🚜 EC480</button>
+        <button class="np-chip" onclick="quickSearch('SE2701')">⚡ SE2701</button>
+        <button class="np-chip" onclick="quickSearch('MID 128')">📟 MID 128</button>
+        <button class="np-chip" onclick="quickSearch('111-')">🔧 111-</button>
+        <button class="np-chip" onclick="quickSearch('센서')">📡 센서</button>
+        <button class="np-chip" onclick="quickSearch('압력')">🎛️ 압력</button>
+      </div>
+    </div>
+
+    <!-- 상태 표시줄 & 전체 펼치기/접기 버튼 -->
+    <div class="status-bar" id="statusBarWrap">
+      <span id="status">💡 검색어를 입력하거나 위 칩을 터치하세요.</span>
+      <button class="bulk-toggle-btn" id="bulkToggleBtn" style="display:none;" onclick="toggleAllCards()">
+        <span id="bulkToggleText">전체 펼치기 ▾</span>
+      </button>
+    </div>
+
+    <!-- 검색 결과 목록 -->
+    <div id="results">
+      <div class="empty-state">
+        <div class="empty-state-icon">📱</div>
+        <div class="empty-state-title">네이버페이 스타일 간편 검색</div>
+        <div class="empty-state-desc">
+          상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
+          굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.<br><br>
+          <span style="color:var(--np-green); font-weight:700;">💡 검색 결과 터치 시 상세 진단서가 펼쳐집니다.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- 📋 담은 진단서 하단 고정 플로팅 바 -->
+  <div class="np-basket-float-bar" id="basketFloatBar" style="display: none;">
+    <div class="np-basket-float-content">
+      <div class="np-basket-float-left">
+        <div class="np-basket-title">
+          <span class="np-basket-icon">📋</span>
+          <span>선택한 진단서 <b id="basketCount">0</b>건</span>
+          <button class="np-basket-clear-btn" onclick="clearBasket()" title="담은 목록 비우기">전체 비우기</button>
+        </div>
+        <div class="np-basket-chips-scroll" id="basketChipsContainer"></div>
+      </div>
+      <button class="np-basket-open-btn" onclick="openBasketView()">
+        <span>모아보기 ➔</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 맨 위로 가기 플로팅 버튼 -->
+  <button id="scrollTopBtn" class="scroll-top-btn" onclick="scrollToTop()">↑</button>
+
+  <script>
+    const TURSO_URL = "https://volvoerror-bongkeun-choi.aws-ap-northeast-1.turso.io/v2/pipeline";
+    const TURSO_TOKEN = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODcxMjM5MDYsImlkIjoiMDFhMDE1M2QtNDAwMS03OWU4LTlmYWUtNWJmZDMyZjcyMGE3Iiwia2lkIjoicEo1RHFMd2V3dHJZLTBXWGNxRTd0cnVRNWxrWDlYOVFJNTYxZl9lSC1YTSIsInJpZCI6IjY1YmYwM2JjLTc1ZmEtNGQ1NC05MzY0LWFhNjYzNjRlNzZjNyJ9.tFtwTpsiqQN9Y2kddP-tMA3hR5EgIYlGVJ2erxkb4D9WDCkBhG8fUR1kSGufVNgJKnUV1xCu9uwOR-nGq12rDA";
+
+    let searchTimer = null;
+    let currentSearchResults = [];
+    let editingUniqueId = null;
+    let areAllExpanded = false;
+
+    // 현재 뷰 모드 ('card' | 'table') 및 테마 ('naver' | 'dark')
+    let currentViewMode = localStorage.getItem('volvo_view_mode') || 'card';
+    let currentTheme = localStorage.getItem('volvo_theme') || 'naver';
+
+    document.addEventListener('DOMContentLoaded', () => {
+      applyTheme(currentTheme);
+      applyViewMode(currentViewMode);
+      updateBasketFloatBar();
+    });
+
+    function setViewMode(mode) {
+      currentViewMode = mode;
+      localStorage.setItem('volvo_view_mode', mode);
+      applyViewMode(mode);
+      const q = document.getElementById('searchInput').value.trim();
+      if (currentSearchResults.length > 0) {
+        renderCards(currentSearchResults, q);
+      }
+    }
+
+    function applyViewMode(mode) {
+      document.documentElement.setAttribute('data-view', mode);
+      if (mode === 'card') {
+        document.getElementById('tabCardView').classList.add('active');
+        document.getElementById('tabTableView').classList.remove('active');
+      } else {
+        document.getElementById('tabTableView').classList.add('active');
+        document.getElementById('tabCardView').classList.remove('active');
+      }
+    }
+
+    function toggleDarkMode() {
+      const newTheme = currentTheme === 'dark' ? 'naver' : 'dark';
+      currentTheme = newTheme;
+      localStorage.setItem('volvo_theme', newTheme);
+      applyTheme(newTheme);
+    }
+
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      const meta = document.getElementById('metaThemeColor');
+      const icon = document.getElementById('themeIcon');
+      const text = document.getElementById('themeText');
+
+      if (theme === 'dark') {
+        meta.setAttribute('content', '#181b20');
+        icon.innerText = '☀️';
+        text.innerText = '주간 모드';
+      } else {
+        meta.setAttribute('content', '#03c75a');
+        icon.innerText = '🌙';
+        text.innerText = '야간 모드';
+      }
+    }
+
+    // 카드 아코디언 토글 (개별)
+    // 📋 진단서 바구니(Basket) 상태 관리 (세션 단위 관리: 페이지 재진입/새로고침 시 자동 초기화)
+    let basketMap = {}; // { unique_id: itemObject }
+    try {
+      const savedBasket = sessionStorage.getItem('volvo_basket_items');
+      if (savedBasket) basketMap = JSON.parse(savedBasket);
+    } catch(e) { basketMap = {}; }
+
+    let isBasketViewActive = false;
+
+    function saveBasketToStorage() {
+      try {
+        sessionStorage.setItem('volvo_basket_items', JSON.stringify(basketMap));
+      } catch(e) {}
+      updateBasketFloatBar();
+    }
+
+    function toggleBasket(uniqueId) {
+      if (basketMap[uniqueId]) {
+        delete basketMap[uniqueId];
+      } else {
+        // 현재 검색 결과나 저장된 데이터에서 찾기
+        const found = (currentSearchResults || []).find(i => i.unique_id === uniqueId) || 
+                      (primarySearchResults || []).find(i => i.unique_id === uniqueId);
+        if (found) {
+          basketMap[uniqueId] = found;
+        }
+      }
+      saveBasketToStorage();
+      
+      // 현재 화면 내 해당 카드 버튼 상태 즉시 갱신
+      const card = document.getElementById(`card_${uniqueId}`);
+      if (card) {
+        const btn = card.querySelector('.np-basket-btn');
+        if (btn) {
+          const isNowIn = !!basketMap[uniqueId];
+          btn.classList.toggle('active', isNowIn);
+          btn.innerHTML = `<span>${isNowIn ? '✓ 담김' : '+ 담기'}</span>`;
+        }
+      }
+
+      if (isBasketViewActive) {
+        renderBasketView();
+      }
+    }
+
+    function updateBasketFloatBar() {
+      const bar = document.getElementById('basketFloatBar');
+      const countEl = document.getElementById('basketCount');
+      const container = document.getElementById('basketChipsContainer');
+      const keys = Object.keys(basketMap);
+
+      if (keys.length === 0 || isBasketViewActive) {
+        if (bar) bar.style.display = 'none';
+        return;
+      }
+
+      if (bar) bar.style.display = 'block';
+      if (countEl) countEl.innerText = keys.length;
+
+      if (container) {
+        container.innerHTML = keys.map(uid => {
+          const item = basketMap[uid];
+          const dtc = item?.dtc || uid;
+          const model = item?.model_name || '';
+          return `
+            <span class="np-basket-mini-chip">
+              <b>${dtc}</b> ${model ? `<small>(${model})</small>` : ''}
+              <span class="np-basket-mini-remove" onclick="event.stopPropagation(); toggleBasket('${uid}')">✕</span>
+            </span>
+          `;
+        }).join('');
+      }
+    }
+
+    function clearBasket() {
+      basketMap = {};
+      saveBasketToStorage();
+      renderCards(currentSearchResults, document.getElementById('searchInput')?.value || '');
+      if (isBasketViewActive) {
+        closeBasketView();
+      }
+    }
+
+    function clearBasketAndExit() {
+      clearBasket();
+      closeBasketView();
+    }
+
+    function openBasketView() {
+      isBasketViewActive = true;
+      updateBasketFloatBar();
+      // 검색창 영역 숨기고 모아보기 집중
+      const searchWrap = document.querySelector('.search-sticky-wrap');
+      if (searchWrap) searchWrap.style.display = 'none';
+      renderBasketView();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function closeBasketView() {
+      isBasketViewActive = false;
+      // 검색창 영역 다시 노출
+      const searchWrap = document.querySelector('.search-sticky-wrap');
+      if (searchWrap) searchWrap.style.display = 'block';
+      updateBasketFloatBar();
+      
+      const q = document.getElementById('searchInput')?.value || '';
+      if (currentSearchResults && currentSearchResults.length > 0) {
+        renderCards(currentSearchResults, q);
+      } else {
+        clearSearch();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderBasketView() {
+      const resultsEl = document.getElementById('results');
+      const statusEl = document.getElementById('status');
+      const bulkBtn = document.getElementById('bulkToggleBtn');
+      const items = Object.values(basketMap);
+
+      if (items.length === 0) {
+        resultsEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-title">담은 진단서가 없습니다</div>
+            <div class="empty-state-desc">
+              검색 결과 카드 우측 상단의 <b>[+ 담기]</b> 버튼을 눌러 점검할 에러코드들을 바구니에 모아보세요.<br><br>
+              <button class="basket-exit-main-btn" style="border:1.5px solid var(--np-green); margin:0 auto;" onclick="closeBasketView()">← 검색 화면으로 나가기</button>
+            </div>
+          </div>
+        `;
+        statusEl.innerText = '담은 진단서가 없습니다.';
+        if (bulkBtn) bulkBtn.style.display = 'none';
+        return;
+      }
+
+      statusEl.innerHTML = `📋 선택한 진단서 모음 (총 <b>${items.length}</b>건)`;
+      if (bulkBtn) {
+        bulkBtn.style.display = 'inline-flex';
+        areAllExpanded = true;
+        document.getElementById('bulkToggleText').innerText = '전체 접기 ▴';
+      }
+
+      renderCards(items, '', true);
+    }
+
+    // 일련번호 / 옵션 유효 범위 접기/펼치기 토글
+    function toggleSpecBox(boxId) {
+      const box = document.getElementById(boxId);
+      if (!box) return;
+      const isOpen = box.classList.toggle('open');
+      const txt = box.querySelector('.spec-acc-text');
+      if (txt) txt.innerText = isOpen ? '접기' : '펼치기';
+    }
+
+    function toggleCard(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const isExp = card.classList.toggle('expanded');
+      const btnText = card.querySelector('.expand-indicator span:first-child');
+      if (btnText) {
+        btnText.innerText = isExp ? '접기' : '펼치기';
+      }
+    }
+
+    // 전체 카드 일괄 펼치기 / 접기
+    function toggleAllCards() {
+      const cards = document.querySelectorAll('.np-card');
+      areAllExpanded = !areAllExpanded;
+      cards.forEach(card => {
+        if (areAllExpanded) {
+          card.classList.add('expanded');
+          const btn = card.querySelector('.expand-indicator span:first-child');
+          if (btn) btn.innerText = '접기';
+        } else {
+          card.classList.remove('expanded');
+          const btn = card.querySelector('.expand-indicator span:first-child');
+          if (btn) btn.innerText = '펼치기';
+        }
+      });
+      const bulkBtnText = document.getElementById('bulkToggleText');
+      if (bulkBtnText) {
+        bulkBtnText.innerText = areAllExpanded ? '전체 접기 ▴' : '전체 펼치기 ▾';
+      }
+    }
+
+    // 플로팅 스크롤 버튼
+    window.addEventListener('scroll', () => {
+      const btn = document.getElementById('scrollTopBtn');
+      if (window.scrollY > 250) {
+        btn.style.display = 'flex';
+      } else {
+        btn.style.display = 'none';
+      }
+    });
+
+    function scrollToTop() {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    let primarySearchResults = []; // 1차 검색 원본 결과
+
+    // 🎯 검색 정확도 가중치 정렬 (에러코드 일치 최우선 & 자연 번호순 정렬)
+    function sortResultsByRelevance(items, query) {
+      if (!query || !items || items.length === 0) return items;
+      
+      const qClean = query.toUpperCase().replace(/[\s\-_]/g, '');
+      
+      return [...items].sort((a, b) => {
+        const getTierAndScore = (item) => {
+          const dtcClean = String(item.dtc || '').toUpperCase().replace(/[\s\-_]/g, '');
+          const modelClean = String(item.model_name || '').toUpperCase().replace(/[\s\-_]/g, '');
+          const compClean = String(item.comp_name || '').toUpperCase().replace(/[\s\-_]/g, '');
+          
+          let content = {};
+          try { content = JSON.parse(item.content_json); } catch(e) {}
+          const paramClean = String(content.paramName || content.compFull || '').toUpperCase().replace(/[\s\-_]/g, '');
+          const ecuClean = String(item.ecu || content.ecu || '').toUpperCase().replace(/[\s\-_]/g, '');
+
+          // [Tier 1: 50,000점 이상] 에러코드(DTC) 또는 파라미터명에 검색어가 직접 들어간 경우 (최우선 그룹)
+          if (dtcClean === qClean || paramClean === qClean) {
+            return 100000; // 완전 일치
+          }
+          if (dtcClean.startsWith(qClean) || paramClean.startsWith(qClean)) {
+            return 80000; // 접두어 일치
+          }
+          if (dtcClean.includes(qClean) || paramClean.includes(qClean)) {
+            return 50000; // 에러코드 내 포함 (예: MID142 PSID4 -> PSID 포함)
+          }
+
+          // [Tier 2: 10,000점~30,000점] 부품명 / 구성부품명 매칭
+          if (compClean === qClean) return 30000;
+          if (compClean.startsWith(qClean)) return 20000;
+          if (compClean.includes(qClean)) return 10000;
+
+          // [Tier 3: 4,000점~8,000점] 기종명 매칭
+          if (modelClean === qClean) return 8000;
+          if (modelClean.startsWith(qClean)) return 6000;
+          if (modelClean.includes(qClean)) return 4000;
+
+          // [Tier 4: 2,000점] 컨트롤 유니트(ECU) 매칭
+          if (ecuClean.includes(qClean)) return 2000;
+
+          // [Tier 5: 100점] 단순 본문/조치사항/설명 내 언급된 간접 연관 코드 (무조건 최하위)
+          return 100;
+        };
+
+        const scoreA = getTierAndScore(a);
+        const scoreB = getTierAndScore(b);
+
+        if (scoreA !== scoreB) {
+          return scoreB - scoreA; // 점수 높은 그룹 우선 (내림차순)
+        }
+
+        // 동점인 경우 (예: 모두 PSID 코드인 경우):
+        // 1. DTC 번호순 자연어 정렬 (PSID 4 -> PSID 6 -> PSID 9 -> PSID 26 -> PSID 200 -> PSID 216...)
+        const dtcCompare = String(a.dtc || '').localeCompare(String(b.dtc || ''), undefined, { numeric: true, sensitivity: 'base' });
+        if (dtcCompare !== 0) return dtcCompare;
+
+        // 2. 기종명 순 정렬
+        return String(a.model_name || '').localeCompare(String(b.model_name || ''));
+      });
+    }
+
+    function handleSecondSearch() {
+      const subQ = (document.getElementById('secondSearchInput')?.value || '').trim();
+      document.getElementById('clearSecondBtn').style.display = subQ ? 'flex' : 'none';
+      const q = (document.getElementById('searchInput')?.value || '').trim();
+
+      if (!subQ) {
+        currentSearchResults = [...primarySearchResults];
+        document.getElementById('status').innerHTML = `검색 결과 <b>${primarySearchResults.length}</b>건`;
+        renderCards(primarySearchResults, q);
+        return;
+      }
+
+      const subQClean = subQ.toUpperCase().replace(/\s+/g, '');
+      const filtered = primarySearchResults.filter(item => {
+        let content = {};
+        try { content = JSON.parse(item.content_json); } catch(e) {}
+        const specs = content.specs || {};
+        const specStr = [
+          ...(specs.options || []).map(o => `${o.model} ${o.optNo} ${o.optName}`),
+          ...(specs.serials || []).map(s => `${s.model} ${s.factory} ${s.start} ${s.end}`)
+        ].join(' ');
+
+        const targetFull = [
+          item.model_name,
+          item.ecu,
+          content.ecu,
+          content.compFull,
+          content.paramName,
+          specStr,
+          item.search_text
+        ].join(' ').toUpperCase().replace(/\s+/g, '');
+
+        return targetFull.includes(subQClean);
+      });
+
+      currentSearchResults = filtered;
+      document.getElementById('status').innerHTML = `총 <b>${primarySearchResults.length}</b>건 중 [${subQ}] <b>${filtered.length}건</b> 일치`;
+      renderCards(filtered, q + ' ' + subQ);
+    }
+
+    function clearSecondSearch() {
+      const subInput = document.getElementById('secondSearchInput');
+      if (subInput) subInput.value = '';
+      document.getElementById('clearSecondBtn').style.display = 'none';
+      handleSecondSearch();
+    }
+
+    function quickSearch(keyword) {
+      const input = document.getElementById('searchInput');
+      input.value = keyword;
+      handleSearch();
+      input.blur();
+    }
+
+    function handleSearch() {
+      const q = document.getElementById('searchInput').value.trim();
+      document.getElementById('clearBtn').style.display = q ? 'flex' : 'none';
+      if (q.length < 2) {
+        const subBox = document.getElementById('secondSearchBox');
+        if (subBox) subBox.style.display = 'none';
+      }
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => executeSearch(q), 120);
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('clearBtn').style.display = 'none';
+      const subBox = document.getElementById('secondSearchBox');
+      if (subBox) subBox.style.display = 'none';
+      const subInput = document.getElementById('secondSearchInput');
+      if (subInput) subInput.value = '';
+      document.getElementById('clearSecondBtn').style.display = 'none';
+      primarySearchResults = [];
+      currentSearchResults = [];
+
+      document.getElementById('results').innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">📱</div>
+          <div class="empty-state-title">네이버페이 스타일 간편 검색</div>
+          <div class="empty-state-desc">
+            상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
+            굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.<br><br>
+            <span style="color:var(--np-green); font-weight:700;">💡 검색 결과 터치 시 상세 진단서가 펼쳐집니다.</span>
+          </div>
+        </div>
+      `;
+      document.getElementById('status').innerText = '💡 검색어를 입력하거나 위 칩을 터치하세요.';
+      document.getElementById('bulkToggleBtn').style.display = 'none';
+    }
+
+    async function executeSearch(q) {
+      const statusEl = document.getElementById('status');
+      const resultsEl = document.getElementById('results');
+      const bulkBtn = document.getElementById('bulkToggleBtn');
+
+      if (q.length < 2) {
+        const subBox = document.getElementById('secondSearchBox');
+        if (subBox) subBox.style.display = 'none';
+        resultsEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">💡</div>
+            <div class="empty-state-title">검색어를 2글자 이상 입력하세요</div>
+            <div class="empty-state-desc">예: EW145, EC300, SE2701, MID 128, 111</div>
+          </div>
+        `;
+        statusEl.innerText = '검색어를 2글자 이상 입력하세요.';
+        bulkBtn.style.display = 'none';
+        return;
+      }
+
+      statusEl.innerText = '⚡ Turso Edge DB 검색 중...';
+      const start = performance.now();
+      const qNoSpace = q.replace(/\s+/g, '');
+
+      try {
+        // 쉼표(,) 또는 세미콜론(;) 다중 검색어 분리
+        const qTokens = q.split(/[,;]/).map(t => t.trim()).filter(t => t.length >= 2);
+        
+        let sql = '';
+        let args = [];
+
+        if (qTokens.length > 1) {
+          // 다중 에러코드 쉼표 검색 (예: SE2701, PID164, PSID97)
+          const whereClauses = qTokens.map(() => `(dtc LIKE ? OR dtc LIKE ? OR model_name LIKE ? OR search_text LIKE ?)`).join(' OR ');
+          sql = `SELECT unique_id, dtc, model_name, doc_type, ecu, comp_name, content_json FROM diagnostics WHERE ${whereClauses} LIMIT 80;`;
+          qTokens.forEach(tok => {
+            const tokClean = tok.replace(/\s+/g, '');
+            args.push({ type: "text", value: `%${tok}%` });
+            args.push({ type: "text", value: `%${tokClean}%` });
+            args.push({ type: "text", value: `%${tok}%` });
+            args.push({ type: "text", value: `%${tokClean}%` });
+          });
+        } else {
+          // 단일 검색어 기본 정렬 쿼리
+          sql = `
+            SELECT unique_id, dtc, model_name, doc_type, ecu, comp_name, content_json FROM diagnostics 
+            WHERE dtc LIKE ? OR dtc LIKE ? OR model_name LIKE ? OR comp_name LIKE ? OR search_text LIKE ? OR search_text LIKE ?
+            ORDER BY 
+              CASE 
+                WHEN UPPER(REPLACE(REPLACE(dtc, ' ', ''), '-', '')) = ? THEN 1
+                WHEN UPPER(dtc) LIKE ? THEN 2
+                WHEN UPPER(comp_name) LIKE ? THEN 3
+                ELSE 4
+              END,
+              dtc ASC,
+              model_name ASC
+            LIMIT 60;
+          `;
+          args = [
+            { type: "text", value: `%${q}%` },
+            { type: "text", value: `%${qNoSpace}%` },
+            { type: "text", value: `%${q}%` },
+            { type: "text", value: `%${q}%` },
+            { type: "text", value: `%${q}%` },
+            { type: "text", value: `%${qNoSpace}%` },
+            { type: "text", value: qNoSpace.toUpperCase() },
+            { type: "text", value: `${q.toUpperCase()}%` },
+            { type: "text", value: `%${q.toUpperCase()}%` }
+          ];
+        }
+
+        const payload = {
+          requests: [{
+            type: "execute",
+            stmt: { sql, args }
+          }]
+        };
+
+        const res = await fetch(TURSO_URL, {
+          method: "POST",
+          headers: { "Authorization": `Bearer ${TURSO_TOKEN}`, "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        const result = data.results[0]?.response?.result;
+        let items = [];
+
+        if (result && result.rows) {
+          const cols = result.cols.map(c => c.name);
+          result.rows.forEach(r => {
+            let obj = {};
+            r.forEach((cell, i) => { obj[cols[i]] = cell?.value ?? ""; });
+            items.push(obj);
+          });
+        }
+
+        // 🎯 에러코드 일치도 가중치 정렬 실행
+        items = sortResultsByRelevance(items, q);
+
+        primarySearchResults = items;
+        currentSearchResults = items;
+        const elapsed = (performance.now() - start).toFixed(1);
+        statusEl.innerHTML = `검색 결과 <b>${items.length}</b>건 (응답 <b>${elapsed}ms</b>)`;
+
+        const subBox = document.getElementById('secondSearchBox');
+        const subInput = document.getElementById('secondSearchInput');
+        if (subBox) {
+          if (items.length >= 2) {
+            subBox.style.display = 'flex';
+            if (subInput) subInput.value = '';
+            document.getElementById('clearSecondBtn').style.display = 'none';
+          } else {
+            subBox.style.display = 'none';
+          }
+        }
+        
+        if (items.length > 0) {
+          bulkBtn.style.display = 'inline-flex';
+          areAllExpanded = false;
+          document.getElementById('bulkToggleText').innerText = '전체 펼치기 ▾';
+        } else {
+          bulkBtn.style.display = 'none';
+        }
+
+        renderCards(items, q);
+      } catch (e) {
+        statusEl.innerHTML = `<span style="color:var(--np-red)">⚠️ 검색 오류: ${e.message}</span>`;
+        bulkBtn.style.display = 'none';
+      }
+    }
+
+    function highlight(text, keyword) {
+      if (!text || !keyword) return text || '';
+      const regex = new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      return String(text).replace(regex, '<span class="highlight">$1</span>');
+    }
+
+    function renderCards(items, keyword) {
+      const box = document.getElementById('results');
+      box.innerHTML = '';
+
+      if (items.length === 0) {
+        box.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">일치하는 진단 매뉴얼이 없습니다</div>
+            <div class="empty-state-desc">다른 고장코드나 부품명, 기종명으로 검색해보세요.</div>
+          </div>
+        `;
+        return;
+      }
+
+      items.forEach((d, idx) => {
+        let content = {};
+        try { content = JSON.parse(d.content_json); } catch(e) {}
+
+        const isSae = (d.doc_type || '').toUpperCase() === 'SAE' || (content.doc_type || '').toUpperCase() === 'SAE';
+        const specs = content.specs || {};
+        const cardId = `card_item_${idx}`;
+        
+        // 간략 요약 스니펫 생성 (원인 또는 증상 또는 디스플레이 메시지 1줄)
+        let snippet = '';
+        if (isSae) {
+          snippet = content.displayMsg || (content.fmiList && content.fmiList[0] ? `FMI ${content.fmiList[0].fmi}: ${content.fmiList[0].symptom || content.fmiList[0].causes || ''}` : '-');
+        } else {
+          snippet = content.event || content.symptom || content.causes || content.actions || '-';
+        }
+        snippet = snippet.split('|')[0].trim();
+
+        let specTableHtml = '';
+        
+        // 검색어 토큰 분리 (기종 필터링용)
+        const searchTokens = (keyword || '').toUpperCase().split(/\s+/).map(t => t.trim()).filter(t => t.length >= 2);
+        
+        // ⚙️ 옵션 유효 범위 아코디언
+        if (specs.options && specs.options.length > 0) {
+          const optBoxId = `optBox_${cardId}`;
+          let optRows = specs.options;
+          let isOptFiltered = false;
+
+          if (searchTokens.length > 0) {
+            const matchedOpts = specs.options.filter(o => {
+              const str = `${o.model} ${o.optNo} ${o.optName} ${o.optConfig}`.toUpperCase();
+              return searchTokens.some(tok => str.includes(tok));
+            });
+            if (matchedOpts.length > 0 && matchedOpts.length < specs.options.length) {
+              optRows = matchedOpts;
+              isOptFiltered = true;
+            }
+          }
+
+          const badgeText = isOptFiltered 
+            ? `🎯 검색 기종 관련 ${optRows.length}개 옵션 표시`
+            : `총 ${specs.options.length}개 옵션 사양`;
+
+          specTableHtml += `
+            <div class="spec-accordion-box ${isOptFiltered ? 'open' : ''}" id="${optBoxId}">
+              <div class="spec-accordion-header" onclick="toggleSpecBox('${optBoxId}')">
+                <div class="spec-acc-left">
+                  <span>⚙️</span>
+                  <span>옵션 / 구성 유효 범위</span>
+                  <span class="spec-acc-badge ${isOptFiltered ? 'filtered' : ''}">${badgeText}</span>
+                </div>
+                <div class="spec-acc-right">
+                  <span class="spec-acc-text">${isOptFiltered ? '접기' : '펼치기'}</span>
+                  <span class="spec-acc-arrow">▾</span>
+                </div>
+              </div>
+              <div class="spec-accordion-body">
+                <div class="oem-tbl-wrap">
+                  <table class="oem-tbl">
+                    <tr style="font-weight:bold;">
+                      <td>모델 종류</td><td>옵션 번호</td><td>옵션명</td><td>구성</td>
+                    </tr>
+                    ${optRows.map(o => `
+                      <tr>
+                        <td><b>${highlight(o.model || d.model_name, keyword)}</b></td>
+                        <td>${highlight(o.optNo || '', keyword)}</td>
+                        <td>${highlight(o.optName || '', keyword)}</td>
+                        <td>${highlight(o.optConfig || '', keyword)}</td>
+                      </tr>
+                    `).join('')}
+                  </table>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // 🔢 일련 번호 유효 범위 아코디언
+        if (specs.serials && specs.serials.length > 0) {
+          const serialBoxId = `serialBox_${cardId}`;
+          let serialRows = specs.serials;
+          let isSerialFiltered = false;
+
+          if (searchTokens.length > 0) {
+            const matchedSerials = specs.serials.filter(s => {
+              const str = `${s.model} ${s.factory} ${s.start} ${s.end}`.toUpperCase();
+              return searchTokens.some(tok => str.includes(tok));
+            });
+            if (matchedSerials.length > 0 && matchedSerials.length < specs.serials.length) {
+              serialRows = matchedSerials;
+              isSerialFiltered = true;
+            }
+          }
+
+          const badgeText = isSerialFiltered 
+            ? `🎯 검색 기종 관련 ${serialRows.length}개 차대번호 범위` 
+            : `총 ${specs.serials.length}개 모델 사양`;
+
+          specTableHtml += `
+            <div class="spec-accordion-box ${isSerialFiltered ? 'open' : ''}" id="${serialBoxId}">
+              <div class="spec-accordion-header" onclick="toggleSpecBox('${serialBoxId}')">
+                <div class="spec-acc-left">
+                  <span>🔢</span>
+                  <span>일련 번호 유효 범위</span>
+                  <span class="spec-acc-badge ${isSerialFiltered ? 'filtered' : ''}">${badgeText}</span>
+                </div>
+                <div class="spec-acc-right">
+                  <span class="spec-acc-text">${isSerialFiltered ? '접기' : '펼치기'}</span>
+                  <span class="spec-acc-arrow">▾</span>
+                </div>
+              </div>
+              <div class="spec-accordion-body">
+                <div class="oem-tbl-wrap">
+                  <table class="oem-tbl">
+                    <tr style="font-weight:bold;">
+                      <td>모델 종류</td><td>생산 사업장</td><td>시작 S/N</td><td>종료 S/N</td>
+                    </tr>
+                    ${serialRows.map(s => `
+                      <tr>
+                        <td><b>${highlight(s.model || d.model_name, keyword)}</b></td>
+                        <td>${highlight(s.factory || '', keyword)}</td>
+                        <td>${highlight(s.start || '', keyword)}</td>
+                        <td>${highlight(s.end || '', keyword)}</td>
+                      </tr>
+                    `).join('')}
+                  </table>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        const renderBullets = (rawStr) => {
+          if (!rawStr || rawStr === '없음' || rawStr === '-') return '<div class="bullet-item"><span class="bullet-icon">•</span><span>없음</span></div>';
+          return String(rawStr).split('|').map(s => {
+            const t = s.trim();
+            return t ? `<div class="bullet-item"><span class="bullet-icon">•</span><span>${highlight(t, keyword)}</span></div>` : '';
+          }).join('');
+        };
+
+        const renderEvent = (rawStr) => {
+          if (!rawStr || rawStr === '없음' || rawStr === '-') return '-';
+          if (String(rawStr).includes('|')) return renderBullets(rawStr);
+          return highlight(rawStr, keyword);
+        };
+
+        const renderActions = (rawActions, defaultDtc) => {
+          if (!rawActions || rawActions === '없음' || rawActions === '-') {
+            return '<div class="bullet-item"><span class="bullet-icon">•</span><span>없음</span></div>';
+          }
+          const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
+          return parts.map(p => {
+            let formatted = highlight(p, keyword);
+            formatted = formatted.replace(/(PWM\d+|SE\d+|\d{3}\s*(?:PID|PPID|SID|PSID)\d+)/g, '<a href="javascript:void(0)" onclick="event.stopPropagation(); quickSearch(\'$1\')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">$1</a>');
+            return `<div class="bullet-item"><span class="bullet-icon">🔧</span><span>${formatted}</span></div>`;
+          }).join('');
+        };
+
+        const renderSaeActions = (rawActions, defaultDtc) => {
+          if (!rawActions || rawActions === '없음' || rawActions === '-') {
+            return `<a href="javascript:void(0)" onclick="event.stopPropagation(); quickSearch('${defaultDtc}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${defaultDtc}</a>`;
+          }
+          const parts = String(rawActions).split('|').map(s => s.trim()).filter(Boolean);
+          return parts.map(p => {
+            let itemHtml = highlight(p, keyword);
+            itemHtml = itemHtml.replace(/(\b\d{3}\s*(?:PID|PPID|SID|PSID)\d+\b|\bMID\d+\b|\bSE\d+\b)/gi, '<a href="javascript:void(0)" onclick="event.stopPropagation(); quickSearch(\'$1\')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">$1</a>');
+            return `<div class="bullet-item"><span class="bullet-icon">🔧</span><span>${itemHtml}</span></div>`;
+          }).join('');
+        };
+
+        const div = document.createElement('div');
+        div.className = 'np-card';
+        div.id = cardId;
+
+        const isBasketed = !!basketMap[d.unique_id];
+        
+        let basketBtnHtml = '';
+        if (isBasketMode) {
+          basketBtnHtml = `
+            <button class="np-basket-btn remove-mode" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}')" title="모아보기 목록에서 제외">
+              <span>✕ 제외</span>
+            </button>
+          `;
+        } else {
+          basketBtnHtml = `
+            <button class="np-basket-btn ${isBasketed ? 'active' : ''}" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}')" title="진단서 바구니에 담기">
+              <span>${isBasketed ? '✓ 담김' : '+ 담기'}</span>
+            </button>
+          `;
+        }
+
+        // 요약 헤더 HTML (간단하게 1~2줄 표시 + 담기 버튼)
+        const summaryHeaderHtml = `
+          <div class="np-card-summary" onclick="toggleCard('${cardId}')">
+            <div class="np-summary-row1">
+              <div class="np-card-header-left">
+                <span class="${isSae ? 'badge-sae-np' : 'badge-dtc-np'}">${d.dtc}</span>
+                <span class="badge-model-np">🚜 ${d.model_name || 'Volvo'}</span>
+                ${(d.ecu || content.ecu) ? `<span class="badge-ecu-tag">📟 ${highlight(d.ecu || content.ecu, keyword)}</span>` : ''}
+              </div>
+              <div class="np-header-actions">
+                ${basketBtnHtml}
+                <div class="expand-indicator" onclick="event.stopPropagation(); toggleCard('${cardId}')">
+                  <span>펼치기</span>
+                  <span class="expand-arrow">▾</span>
+                </div>
+              </div>
+            </div>
+            <div class="np-summary-row2">
+              <div class="np-comp-title">${highlight(content.compFull || content.paramName || d.comp_name, keyword)}</div>
+              ${snippet && snippet !== '-' ? `<div class="np-summary-snippet">🔍 ${highlight(snippet, keyword)}</div>` : ''}
+            </div>
+          </div>
+        `;
+
+
+
+        let detailBodyHtml = '';
+
+        if (currentViewMode === 'table') {
+          // 📄 원본 OEM 표 모드
+          if (isSae) {
+            const fmiList = content.fmiList || [];
+            let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:bold; margin: 12px 0 6px;">고장 모드 진단</h3>';
+            fmiList.forEach(f => {
+              const condText = (f.cond && f.cond !== '-' && f.cond !== '없음') ? highlight(f.cond, keyword) : '';
+              fmiBlocksHtml += `
+                <table class="oem-tbl" style="margin-bottom:14px;">
+                  <tr>
+                    <th style="width:24%; vertical-align:top;" rowspan="3">
+                      고장 모드<br>
+                      <span style="font-size:14px; color:var(--np-orange);">FMI ${f.fmi}</span>
+                    </th>
+                    <td colspan="2" style="font-weight:bold;">
+                      탐지 조건: <span style="font-weight:normal;">${condText}</span>
+                    </td>
+                  </tr>
+                  <tr style="font-weight:bold; background:var(--box-inner-bg);">
+                    <td style="width:38%;">증상:</td>
+                    <td style="width:38%;">가능한 이유:</td>
+                  </tr>
+                  <tr>
+                    <td style="vertical-align:top;">${renderBullets(f.symptom)}</td>
+                    <td style="vertical-align:top;">${renderBullets(f.causes)}</td>
+                  </tr>
+                  <tr>
+                    <th style="vertical-align:top;">조치</th>
+                    <td colspan="2" style="vertical-align:top;">${renderSaeActions(f.actions, d.dtc)}</td>
+                  </tr>
+                </table>
+              `;
+            });
+
+            detailBodyHtml = `
+              <div class="oem-sheet">
+                                <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+                ${specTableHtml}
+                <table class="oem-tbl" style="margin-bottom:14px;">
+                  <tr><th colspan="2">SAE 코드</th></tr>
+                  <tr><th style="width:24%;">MID/컨트롤 유니트</th><td>${highlight(content.ecu || d.ecu, keyword)}</td></tr>
+                  <tr><th>PID/PPID/SID/PSID</th><td><b>${highlight(content.paramName || d.comp_name, keyword)}</b></td></tr>
+                  <tr><th colspan="2">장비 디스플레이 메시지</th></tr>
+                  <tr><th>텍스트 프레젠테이션</th><td>${highlight(content.displayMsg || '-', keyword)}</td></tr>
+                  <tr><th>기준</th><td><a href="javascript:void(0)" onclick="quickSearch('${content.standard}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${highlight(content.standard || '', keyword)}</a></td></tr>
+                </table>
+                ${fmiBlocksHtml}
+              </div>
+            `;
+          } else {
+            detailBodyHtml = `
+              <div class="oem-sheet">
+                                <div class="oem-title">${highlight(d.dtc, keyword)}</div>
+                ${specTableHtml}
+                <table class="oem-tbl" style="margin-bottom:14px;">
+                  <tr><th colspan="2">ISO DTC 코드</th></tr>
+                  <tr><th style="width:24%;">컨트롤 유니트</th><td>${highlight(content.ecu || d.ecu, keyword)}</td></tr>
+                  <tr><th>DTC 코드, 시스템/구성부품, 고장 유형</th><td><b>${highlight(content.compFull || d.comp_name, keyword)}</b></td></tr>
+                  <tr><th>기준</th><td>${highlight(content.standard || '', keyword)}</td></tr>
+                </table>
+                <table class="oem-tbl">
+                  <tr><th style="width:24%;">고장 이벤트</th><td>${renderEvent(content.event)}</td></tr>
+                  <tr><th>증상</th><td>${renderBullets(content.symptom)}</td></tr>
+                  <tr><th>조건</th><td>${renderBullets(content.condition)}</td></tr>
+                  <tr><th>선행조치 DTC</th><td>${renderBullets(content.preDtc)}</td></tr>
+                  <tr><th>가능한 이유</th><td>${renderBullets(content.causes)}</td></tr>
+                  <tr><th>조치</th><td>${renderActions(content.actions, d.dtc)}</td></tr>
+                </table>
+              </div>
+            `;
+          }
+        } else {
+          // 📱 네이버페이 스마트 카드 모드
+          if (isSae) {
+            const fmiList = content.fmiList || [];
+            let fmiBlocksHtml = '<h3 style="font-size:14px; font-weight:800; margin: 14px 0 8px; color:var(--text);">⚡ 고장 모드 진단 (FMI)</h3>';
+
+            fmiList.forEach(f => {
+              const condText = (f.cond && f.cond !== '-' && f.cond !== '없음') ? highlight(f.cond, keyword) : '';
+              fmiBlocksHtml += `
+                <div class="np-fmi-box">
+                  <div class="np-fmi-top">
+                    <span>🚨 고장 모드: FMI ${f.fmi}</span>
+                    ${condText ? `<span style="font-size:11.5px; font-weight:normal; background:rgba(0,0,0,0.06); padding:2px 7px; border-radius:4px;">탐지: ${condText}</span>` : ''}
+                  </div>
+                  <div class="np-fmi-body">
+                    <div>
+                      <div class="np-tile-label" style="color:var(--np-orange);">🚨 발생 증상</div>
+                      <div class="np-tile-body">${renderBullets(f.symptom)}</div>
+                    </div>
+                    <div>
+                      <div class="np-tile-label" style="color:var(--np-red);">❓ 가능한 이유</div>
+                      <div class="np-tile-body">${renderBullets(f.causes)}</div>
+                    </div>
+                    <div>
+                      <div class="np-tile-label" style="color:var(--np-blue);">🛠️ 조치 내용</div>
+                      <div class="np-tile-body">${renderSaeActions(f.actions, d.dtc)}</div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            });
+
+            detailBodyHtml = `
+                            <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
+              
+              <div class="np-info-section">
+                <div class="np-info-tile">
+                  <div class="np-tile-label">📟 컨트롤 유니트 / 파라미터</div>
+                  <div class="np-tile-body">
+                    <b>${highlight(content.ecu || d.ecu, keyword)}</b> 
+                    ${content.paramName ? ` / <b>${highlight(content.paramName, keyword)}</b>` : ''}
+                  </div>
+                </div>
+
+                ${content.displayMsg ? `
+                  <div class="np-info-tile warn-tile">
+                    <div class="np-tile-label">🖥️ 장비 디스플레이 메시지</div>
+                    <div class="np-tile-body">${highlight(content.displayMsg, keyword)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.standard ? `
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">📐 기준</div>
+                    <div class="np-tile-body"><a href="javascript:void(0)" onclick="quickSearch('${content.standard}')" style="color:var(--np-blue); font-weight:bold; text-decoration:underline;">${highlight(content.standard, keyword)}</a></div>
+                  </div>
+                ` : ''}
+              </div>
+
+              ${specTableHtml}
+              ${fmiBlocksHtml}
+            `;
+          } else {
+            detailBodyHtml = `
+                            <div class="np-dtc-main-title">${highlight(d.dtc, keyword)}</div>
+
+              <div class="np-info-section">
+                <div class="np-info-tile">
+                  <div class="np-tile-label">📟 컨트롤 유니트 (ECU)</div>
+                  <div class="np-tile-body"><b>${highlight(content.ecu || d.ecu, keyword)}</b></div>
+                </div>
+
+                <div class="np-info-tile">
+                  <div class="np-tile-label">🔍 시스템 / 구성부품 / 고장 유형</div>
+                  <div class="np-tile-body"><b>${highlight(content.compFull || d.comp_name, keyword)}</b></div>
+                </div>
+
+                ${content.standard ? `
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">📐 기준</div>
+                    <div class="np-tile-body">${highlight(content.standard, keyword)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.event && content.event !== '-' && content.event !== '없음' ? `
+                  <div class="np-info-tile warn-tile">
+                    <div class="np-tile-label">⚠️ 고장 이벤트</div>
+                    <div class="np-tile-body">${renderEvent(content.event)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.symptom && content.symptom !== '-' && content.symptom !== '없음' ? `
+                  <div class="np-info-tile danger-tile">
+                    <div class="np-tile-label">🚨 발생 증상</div>
+                    <div class="np-tile-body">${renderBullets(content.symptom)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.causes && content.causes !== '-' && content.causes !== '없음' ? `
+                  <div class="np-info-tile">
+                    <div class="np-tile-label">❓ 가능한 이유</div>
+                    <div class="np-tile-body">${renderBullets(content.causes)}</div>
+                  </div>
+                ` : ''}
+
+                ${content.actions && content.actions !== '-' && content.actions !== '없음' ? `
+                  <div class="np-info-tile action-tile">
+                    <div class="np-tile-label">🛠️ 조치 및 해결 방법</div>
+                    <div class="np-tile-body">${renderActions(content.actions, d.dtc)}</div>
+                  </div>
+                ` : ''}
+              </div>
+
+              ${specTableHtml}
+            `;
+          }
+        }
+
+        div.innerHTML = `
+          ${summaryHeaderHtml}
+          <div class="np-card-detail">
+            ${detailBodyHtml}
+          </div>
+        `;
+
+        box.appendChild(div);
+      });
+
+      // 모아보기 모드일 때 하단에도 편리한 나가기 바 추가
+      if (isBasketMode && dataList.length > 0) {
+        const bottomBar = document.createElement('div');
+        bottomBar.className = 'basket-bottom-bar';
+        bottomBar.innerHTML = `
+          <div style="color:white; font-size:13px; font-weight:700;">
+            <span>📋 총 <b>${dataList.length}</b>건 확인 완료</span>
+          </div>
+          <button class="basket-exit-main-btn" style="padding:10px 18px; font-size:13.5px;" onclick="closeBasketView()">
+            <span>✕ 검색으로 나가기 (다른 코드 추가)</span>
+          </button>
+        `;
+        box.appendChild(bottomBar);
+      }
     }
 
     </script>
