@@ -713,6 +713,172 @@
     .empty-state-desc { font-size: 13px; color: var(--text-sub); line-height: 1.5; }
 
     /* 상단 이동 플로팅 버튼 */
+    /* 📋 진단서 담기(Basket) 버튼 & 플로팅 바 & 모아보기 뷰 스타일 */
+    .np-header-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .np-basket-btn {
+      background: var(--chip-bg);
+      border: 1.5px solid var(--border-strong);
+      color: var(--text-sub);
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s;
+    }
+    .np-basket-btn:active { transform: scale(0.94); }
+    .np-basket-btn.active {
+      background: var(--np-green);
+      color: white;
+      border-color: var(--np-green);
+      box-shadow: 0 2px 8px rgba(3, 199, 90, 0.35);
+    }
+
+    /* 하단 고정 플로팅 바 */
+    .np-basket-float-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 680px;
+      background: rgba(24, 27, 32, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      color: white;
+      border-radius: 18px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      z-index: 999;
+      animation: slideUp 0.25s ease-out;
+      padding: 10px 14px;
+    }
+    html[data-theme="naver"] .np-basket-float-bar {
+      background: rgba(20, 24, 30, 0.94);
+      box-shadow: 0 10px 30px rgba(3, 199, 90, 0.25);
+      border: 1.5px solid rgba(3, 199, 90, 0.4);
+    }
+    .np-basket-float-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .np-basket-float-left {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .np-basket-title {
+      font-size: 13px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: #fff;
+    }
+    .np-basket-clear-btn {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-left: 6px;
+      padding: 0;
+    }
+    .np-basket-clear-btn:hover { color: #f87171; }
+    .np-basket-chips-scroll {
+      display: flex;
+      gap: 5px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    .np-basket-chips-scroll::-webkit-scrollbar { display: none; }
+    .np-basket-mini-chip {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f1f5f9;
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .np-basket-mini-remove {
+      cursor: pointer;
+      color: #cbd5e1;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    .np-basket-mini-remove:hover { color: #f87171; }
+    .np-basket-open-btn {
+      background: var(--np-green);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 10px 16px;
+      font-size: 13.5px;
+      font-weight: 900;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(3, 199, 90, 0.4);
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+    .np-basket-open-btn:active { transform: scale(0.95); }
+
+    /* 모아보기 화면 상단 바 */
+    .basket-view-top-bar {
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-strong);
+      border-radius: 16px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    }
+    .basket-back-btn {
+      background: var(--chip-bg);
+      border: 1px solid var(--border-strong);
+      color: var(--text);
+      font-size: 12.5px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .basket-view-title {
+      font-size: 14.5px;
+      font-weight: 900;
+      color: var(--np-green);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
     .scroll-top-btn {
       position: fixed;
       right: 16px;
@@ -845,6 +1011,23 @@
 
 
 
+  <!-- 📋 담은 진단서 하단 고정 플로팅 바 -->
+  <div class="np-basket-float-bar" id="basketFloatBar" style="display: none;">
+    <div class="np-basket-float-content">
+      <div class="np-basket-float-left">
+        <div class="np-basket-title">
+          <span class="np-basket-icon">📋</span>
+          <span>선택한 진단서 <b id="basketCount">0</b>건</span>
+          <button class="np-basket-clear-btn" onclick="clearBasket()" title="담은 목록 비우기">전체 비우기</button>
+        </div>
+        <div class="np-basket-chips-scroll" id="basketChipsContainer"></div>
+      </div>
+      <button class="np-basket-open-btn" onclick="openBasketView()">
+        <span>모아보기 ➔</span>
+      </button>
+    </div>
+  </div>
+
   <!-- 맨 위로 가기 플로팅 버튼 -->
   <button id="scrollTopBtn" class="scroll-top-btn" onclick="scrollToTop()">↑</button>
 
@@ -864,6 +1047,7 @@
     document.addEventListener('DOMContentLoaded', () => {
       applyTheme(currentTheme);
       applyViewMode(currentViewMode);
+      updateBasketFloatBar();
     });
 
     function setViewMode(mode) {
@@ -912,6 +1096,140 @@
     }
 
     // 카드 아코디언 토글 (개별)
+    // 📋 진단서 바구니(Basket) 상태 관리
+    let basketMap = {}; // { unique_id: itemObject }
+    try {
+      const savedBasket = localStorage.getItem('volvo_basket_items');
+      if (savedBasket) basketMap = JSON.parse(savedBasket);
+    } catch(e) { basketMap = {}; }
+
+    let isBasketViewActive = false;
+
+    function saveBasketToStorage() {
+      try {
+        localStorage.setItem('volvo_basket_items', JSON.stringify(basketMap));
+      } catch(e) {}
+      updateBasketFloatBar();
+    }
+
+    function toggleBasket(uniqueId) {
+      if (basketMap[uniqueId]) {
+        delete basketMap[uniqueId];
+      } else {
+        // 현재 검색 결과나 저장된 데이터에서 찾기
+        const found = (currentSearchResults || []).find(i => i.unique_id === uniqueId) || 
+                      (primarySearchResults || []).find(i => i.unique_id === uniqueId);
+        if (found) {
+          basketMap[uniqueId] = found;
+        }
+      }
+      saveBasketToStorage();
+      
+      // 현재 화면 내 해당 카드 버튼 상태 즉시 갱신
+      const card = document.getElementById(`card_${uniqueId}`);
+      if (card) {
+        const btn = card.querySelector('.np-basket-btn');
+        if (btn) {
+          const isNowIn = !!basketMap[uniqueId];
+          btn.classList.toggle('active', isNowIn);
+          btn.innerHTML = `<span>${isNowIn ? '✓ 담김' : '+ 담기'}</span>`;
+        }
+      }
+
+      if (isBasketViewActive) {
+        renderBasketView();
+      }
+    }
+
+    function updateBasketFloatBar() {
+      const bar = document.getElementById('basketFloatBar');
+      const countEl = document.getElementById('basketCount');
+      const container = document.getElementById('basketChipsContainer');
+      const keys = Object.keys(basketMap);
+
+      if (keys.length === 0 || isBasketViewActive) {
+        if (bar) bar.style.display = 'none';
+        return;
+      }
+
+      if (bar) bar.style.display = 'block';
+      if (countEl) countEl.innerText = keys.length;
+
+      if (container) {
+        container.innerHTML = keys.map(uid => {
+          const item = basketMap[uid];
+          const dtc = item?.dtc || uid;
+          const model = item?.model_name || '';
+          return `
+            <span class="np-basket-mini-chip">
+              <b>${dtc}</b> ${model ? `<small>(${model})</small>` : ''}
+              <span class="np-basket-mini-remove" onclick="event.stopPropagation(); toggleBasket('${uid}')">✕</span>
+            </span>
+          `;
+        }).join('');
+      }
+    }
+
+    function clearBasket() {
+      basketMap = {};
+      saveBasketToStorage();
+      renderCards(currentSearchResults, document.getElementById('searchInput')?.value || '');
+      if (isBasketViewActive) {
+        closeBasketView();
+      }
+    }
+
+    function clearBasketAndExit() {
+      clearBasket();
+      closeBasketView();
+    }
+
+    function openBasketView() {
+      isBasketViewActive = true;
+      updateBasketFloatBar();
+      renderBasketView();
+    }
+
+    function closeBasketView() {
+      isBasketViewActive = false;
+      updateBasketFloatBar();
+      const q = document.getElementById('searchInput')?.value || '';
+      renderCards(currentSearchResults, q);
+    }
+
+    function renderBasketView() {
+      const resultsEl = document.getElementById('results');
+      const statusEl = document.getElementById('status');
+      const bulkBtn = document.getElementById('bulkToggleBtn');
+      const items = Object.values(basketMap);
+
+      if (items.length === 0) {
+        resultsEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <div class="empty-state-title">담은 진단서가 없습니다</div>
+            <div class="empty-state-desc">
+              검색 결과 카드 우측 상단의 <b>[+ 담기]</b> 버튼을 눌러 점검할 에러코드들을 바구니에 모아보세요.<br><br>
+              <button class="basket-back-btn" onclick="closeBasketView()">← 검색 화면으로 돌아가기</button>
+            </div>
+          </div>
+        `;
+        statusEl.innerText = '담은 진단서가 없습니다.';
+        if (bulkBtn) bulkBtn.style.display = 'none';
+        return;
+      }
+
+      statusEl.innerHTML = `📋 선택한 진단서 모음 (총 <b>${items.length}</b>건)`;
+      if (bulkBtn) {
+        bulkBtn.style.display = 'inline-flex';
+        areAllExpanded = true; // 모아보기에서는 기본 전체 펼침 지원
+        document.getElementById('bulkToggleText').innerText = '전체 접기 ▴';
+      }
+
+      // 모아보기 상단 바 추가 후 카드 렌더링
+      renderCards(items, '', true);
+    }
+
     // 일련번호 / 옵션 유효 범위 접기/펼치기 토글
     function toggleSpecBox(boxId) {
       const box = document.getElementById(boxId);
@@ -1146,37 +1464,56 @@
       const qNoSpace = q.replace(/\s+/g, '');
 
       try {
-        const sql = `
-          SELECT unique_id, dtc, model_name, doc_type, ecu, comp_name, content_json FROM diagnostics 
-          WHERE dtc LIKE ? OR dtc LIKE ? OR model_name LIKE ? OR comp_name LIKE ? OR search_text LIKE ? OR search_text LIKE ?
-          ORDER BY 
-            CASE 
-              WHEN UPPER(REPLACE(REPLACE(dtc, ' ', ''), '-', '')) = ? THEN 1
-              WHEN UPPER(dtc) LIKE ? THEN 2
-              WHEN UPPER(comp_name) LIKE ? THEN 3
-              ELSE 4
-            END,
-            dtc ASC,
-            model_name ASC
-          LIMIT 60;
-        `;
+        // 쉼표(,) 또는 세미콜론(;) 다중 검색어 분리
+        const qTokens = q.split(/[,;]/).map(t => t.trim()).filter(t => t.length >= 2);
+        
+        let sql = '';
+        let args = [];
+
+        if (qTokens.length > 1) {
+          // 다중 에러코드 쉼표 검색 (예: SE2701, PID164, PSID97)
+          const whereClauses = qTokens.map(() => `(dtc LIKE ? OR dtc LIKE ? OR model_name LIKE ? OR search_text LIKE ?)`).join(' OR ');
+          sql = `SELECT unique_id, dtc, model_name, doc_type, ecu, comp_name, content_json FROM diagnostics WHERE ${whereClauses} LIMIT 80;`;
+          qTokens.forEach(tok => {
+            const tokClean = tok.replace(/\s+/g, '');
+            args.push({ type: "text", value: `%${tok}%` });
+            args.push({ type: "text", value: `%${tokClean}%` });
+            args.push({ type: "text", value: `%${tok}%` });
+            args.push({ type: "text", value: `%${tokClean}%` });
+          });
+        } else {
+          // 단일 검색어 기본 정렬 쿼리
+          sql = `
+            SELECT unique_id, dtc, model_name, doc_type, ecu, comp_name, content_json FROM diagnostics 
+            WHERE dtc LIKE ? OR dtc LIKE ? OR model_name LIKE ? OR comp_name LIKE ? OR search_text LIKE ? OR search_text LIKE ?
+            ORDER BY 
+              CASE 
+                WHEN UPPER(REPLACE(REPLACE(dtc, ' ', ''), '-', '')) = ? THEN 1
+                WHEN UPPER(dtc) LIKE ? THEN 2
+                WHEN UPPER(comp_name) LIKE ? THEN 3
+                ELSE 4
+              END,
+              dtc ASC,
+              model_name ASC
+            LIMIT 60;
+          `;
+          args = [
+            { type: "text", value: `%${q}%` },
+            { type: "text", value: `%${qNoSpace}%` },
+            { type: "text", value: `%${q}%` },
+            { type: "text", value: `%${q}%` },
+            { type: "text", value: `%${q}%` },
+            { type: "text", value: `%${qNoSpace}%` },
+            { type: "text", value: qNoSpace.toUpperCase() },
+            { type: "text", value: `${q.toUpperCase()}%` },
+            { type: "text", value: `%${q.toUpperCase()}%` }
+          ];
+        }
+
         const payload = {
           requests: [{
             type: "execute",
-            stmt: {
-              sql,
-              args: [
-                { type: "text", value: `%${q}%` },
-                { type: "text", value: `%${qNoSpace}%` },
-                { type: "text", value: `%${q}%` },
-                { type: "text", value: `%${q}%` },
-                { type: "text", value: `%${q}%` },
-                { type: "text", value: `%${qNoSpace}%` },
-                { type: "text", value: qNoSpace.toUpperCase() },
-                { type: "text", value: `${q.toUpperCase()}%` },
-                { type: "text", value: `%${q.toUpperCase()}%` }
-              ]
-            }
+            stmt: { sql, args }
           }]
         };
 
@@ -1429,7 +1766,9 @@
         div.className = 'np-card';
         div.id = cardId;
 
-        // 요약 헤더 HTML (간단하게 1~2줄 표시)
+        const isBasketed = !!basketMap[d.unique_id];
+
+        // 요약 헤더 HTML (간단하게 1~2줄 표시 + 담기 버튼)
         const summaryHeaderHtml = `
           <div class="np-card-summary" onclick="toggleCard('${cardId}')">
             <div class="np-summary-row1">
@@ -1438,9 +1777,14 @@
                 <span class="badge-model-np">🚜 ${d.model_name || 'Volvo'}</span>
                 ${(d.ecu || content.ecu) ? `<span class="badge-ecu-tag">📟 ${highlight(d.ecu || content.ecu, keyword)}</span>` : ''}
               </div>
-              <div class="expand-indicator">
-                <span>펼치기</span>
-                <span class="expand-arrow">▾</span>
+              <div class="np-header-actions" onclick="event.stopPropagation()">
+                <button class="np-basket-btn ${isBasketed ? 'active' : ''}" onclick="toggleBasket('${d.unique_id}')" title="진단서 바구니에 담기">
+                  <span>${isBasketed ? '✓ 담김' : '+ 담기'}</span>
+                </button>
+                <div class="expand-indicator">
+                  <span>펼치기</span>
+                  <span class="expand-arrow">▾</span>
+                </div>
               </div>
             </div>
             <div class="np-summary-row2">
