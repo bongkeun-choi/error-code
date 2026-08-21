@@ -817,17 +817,27 @@
       color: #fff;
     }
     .np-basket-clear-btn {
-      background: none;
-      border: none;
-      color: #94a3b8;
-      font-size: 11px;
-      font-weight: 700;
-      text-decoration: underline;
+      background: rgba(244, 67, 54, 0.22);
+      border: 1px solid #ef4444;
+      color: #ff6b6b;
+      font-size: 12.5px;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: 8px;
       cursor: pointer;
       margin-left: 6px;
-      padding: 0;
+      transition: all 0.15s;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: 0 2px 6px rgba(244, 67, 54, 0.2);
     }
-    .np-basket-clear-btn:hover { color: #f87171; }
+    .np-basket-clear-btn:active { transform: scale(0.93); }
+    .np-basket-clear-btn:hover {
+      background: #ef4444;
+      color: #ffffff;
+    }
     .np-basket-chips-scroll {
       display: flex;
       gap: 5px;
@@ -1067,7 +1077,7 @@
         <div class="np-basket-title">
           <span class="np-basket-icon">📋</span>
           <span>선택한 진단서 <b id="basketCount">0</b>건</span>
-          <button class="np-basket-clear-btn" onclick="clearBasket()" title="담은 목록 비우기">전체 비우기</button>
+          <button class="np-basket-clear-btn" onclick="clearBasket()" title="담은 목록 비우기">🗑️ 전체 비우기</button>
         </div>
         <div class="np-basket-chips-scroll" id="basketChipsContainer"></div>
       </div>
@@ -1161,27 +1171,35 @@
       updateBasketFloatBar();
     }
 
-    function toggleBasket(uniqueId) {
+    function toggleBasket(uniqueId, idx) {
       if (basketMap[uniqueId]) {
         delete basketMap[uniqueId];
       } else {
         const found = (currentSearchResults || []).find(i => i.unique_id === uniqueId) || 
-                      (primarySearchResults || []).find(i => i.unique_id === uniqueId);
+                      (primarySearchResults || []).find(i => i.unique_id === uniqueId) ||
+                      (Object.values(basketMap)).find(i => i.unique_id === uniqueId);
         if (found) {
           basketMap[uniqueId] = found;
         }
       }
       saveBasketToStorage();
       
-      const card = document.getElementById(`card_${uniqueId}`);
-      if (card) {
-        const btn = card.querySelector('.np-basket-btn');
+      const isNowIn = !!basketMap[uniqueId];
+
+      // 1. 특정 버튼 ID가 있으면 즉시 클래스 변경
+      if (idx !== undefined && idx !== null) {
+        const btn = document.getElementById(`basket_btn_${idx}`);
         if (btn) {
-          const isNowIn = !!basketMap[uniqueId];
           btn.classList.toggle('active', isNowIn);
           btn.innerHTML = `<span>${isNowIn ? '✓ 담김' : '+ 담기'}</span>`;
         }
       }
+
+      // 2. 화면 전체에서 같은 unique_id를 가진 버튼들 동기화
+      document.querySelectorAll(`[data-uid="${uniqueId}"]`).forEach(btn => {
+        btn.classList.toggle('active', isNowIn);
+        btn.innerHTML = `<span>${isNowIn ? '✓ 담김' : '+ 담기'}</span>`;
+      });
 
       if (isBasketViewActive) {
         renderBasketView();
@@ -1643,7 +1661,7 @@
             <span class="basket-banner-text">선택 진단서 <b>${items.length}</b>건</span>
           </div>
           <div style="display:flex; align-items:center; gap:6px;">
-            <button class="np-basket-clear-btn" style="color:#ffffff; font-size:11.5px; font-weight:700; text-decoration:underline; padding:4px 6px;" onclick="clearBasketAndExit()">전체비우기</button>
+            <button class="np-basket-clear-btn" style="padding:6px 12px; font-size:12.5px;" onclick="clearBasketAndExit()">🗑️ 전체 비우기</button>
             <button class="basket-exit-main-btn" onclick="closeBasketView()">
               <span>✕ 나가기 (추가 검색)</span>
             </button>
@@ -1842,13 +1860,13 @@
         let basketBtnHtml = '';
         if (isBasketMode) {
           basketBtnHtml = `
-            <button class="np-basket-btn remove-mode" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}')" title="모아보기 목록에서 제외">
+            <button class="np-basket-btn remove-mode" data-uid="${d.unique_id}" id="basket_btn_${idx}" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}', ${idx})" title="모아보기 목록에서 제외">
               <span>✕ 제외</span>
             </button>
           `;
         } else {
           basketBtnHtml = `
-            <button class="np-basket-btn ${isBasketed ? 'active' : ''}" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}')" title="진단서 바구니에 담기">
+            <button class="np-basket-btn ${isBasketed ? 'active' : ''}" data-uid="${d.unique_id}" id="basket_btn_${idx}" onclick="event.stopPropagation(); toggleBasket('${d.unique_id}', ${idx})" title="진단서 바구니에 담기">
               <span>${isBasketed ? '✓ 담김' : '+ 담기'}</span>
             </button>
           `;
