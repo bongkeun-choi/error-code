@@ -1055,17 +1055,7 @@
     </div>
 
     <!-- 검색 결과 목록 -->
-    <div id="results">
-      <div class="empty-state">
-        <div class="empty-state-icon">📱</div>
-        <div class="empty-state-title">네이버페이 스타일 간편 검색</div>
-        <div class="empty-state-desc">
-          상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
-          굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.<br><br>
-          <span style="color:var(--np-green); font-weight:700;">💡 검색 결과 터치 시 상세 진단서가 펼쳐집니다.</span>
-        </div>
-      </div>
-    </div>
+    <div id="results"></div>
   </div>
 
 
@@ -1499,17 +1489,7 @@
       primarySearchResults = [];
       currentSearchResults = [];
 
-      document.getElementById('results').innerHTML = `
-        <div class="empty-state">
-          <div class="empty-state-icon">📱</div>
-          <div class="empty-state-title">네이버페이 스타일 간편 검색</div>
-          <div class="empty-state-desc">
-            상단 검색창에 에러코드(예: <b>SE2701</b>, <b>111-1</b>)나<br>
-            굴착기 모델명(<b>EW145B</b>, <b>EC300E</b>)을 입력하세요.<br><br>
-            <span style="color:var(--np-green); font-weight:700;">💡 검색 결과 터치 시 상세 진단서가 펼쳐집니다.</span>
-          </div>
-        </div>
-      `;
+      document.getElementById('results').innerHTML = '';
       document.getElementById('status').innerText = '💡 검색어를 입력하거나 위 칩을 터치하세요.';
       document.getElementById('bulkToggleBtn').style.display = 'none';
     }
@@ -1522,13 +1502,7 @@
       if (q.length < 2) {
         const subBox = document.getElementById('secondSearchBox');
         if (subBox) subBox.style.display = 'none';
-        resultsEl.innerHTML = `
-          <div class="empty-state">
-            <div class="empty-state-icon">💡</div>
-            <div class="empty-state-title">검색어를 2글자 이상 입력하세요</div>
-            <div class="empty-state-desc">예: EW145, EC300, SE2701, MID 128, 111</div>
-          </div>
-        `;
+        resultsEl.innerHTML = '';
         statusEl.innerText = '검색어를 2글자 이상 입력하세요.';
         bulkBtn.style.display = 'none';
         return;
